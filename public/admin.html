@@ -16,7 +16,7 @@
     padding: 16px;
     color: #1f2937;
   }
-  .container { max-width: 1100px; margin: 0 auto; }
+  .container { max-width: 1200px; margin: 0 auto; }
   .card {
     background: #fff;
     border-radius: 12px;
@@ -42,10 +42,20 @@
 
   #dashboard { display: none; }
 
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .tab-btn {
+    padding: 10px 18px; border: none; background: #e5e7eb; color: #374151; border-radius: 8px 8px 0 0;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  .tab-btn.active { background: #2563eb; color: #fff; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
   .stat-box { background: #f9fafb; border-radius: 10px; padding: 14px; text-align: center; }
   .stat-box .num { font-size: 1.6rem; font-weight: 700; color: #2563eb; }
   .stat-box .label { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+  .stat-box.green .num { color: #15803d; }
 
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
   .toolbar input[type=text] {
@@ -60,15 +70,16 @@
   .btn-primary { background: #2563eb; color: #fff; }
   .btn-secondary { background: #e5e7eb; color: #374151; }
   .btn-danger { background: #fee2e2; color: #b91c1c; }
-  .btn-ghost { background: transparent; color: #2563eb; text-decoration: underline; padding: 0; font-weight: 500; }
+  .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
 
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   thead th {
     text-align: left; padding: 8px 10px; background: #f9fafb; color: #374151;
     border-bottom: 2px solid #e5e7eb; white-space: nowrap;
   }
-  tbody td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; }
+  tbody td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; white-space: nowrap; }
   tbody tr:hover { background: #f9fafb; }
+  tbody tr.replaced-row { opacity: 0.5; }
 
   .org-summary-table th, .org-summary-table td { padding: 6px 10px; }
   .pill {
@@ -76,11 +87,17 @@
   }
   .pill.ok { background: #dcfce7; color: #15803d; }
   .pill.full { background: #fee2e2; color: #b91c1c; }
+  .pill.muted { background: #f3f4f6; color: #6b7280; }
+  .pill.info { background: #dbeafe; color: #1d4ed8; }
 
   .table-scroll { overflow-x: auto; }
   .empty { text-align: center; color: #9ca3af; padding: 24px; font-size: 0.9rem; }
   .refresh-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .last-updated { font-size: 0.75rem; color: #9ca3af; }
+
+  .progress-bar { width: 100px; height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .progress-bar-fill { height: 100%; background: #2563eb; }
+  .progress-bar-fill.full { background: #b91c1c; }
 </style>
 </head>
 <body>
@@ -107,54 +124,70 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="stat-grid" id="statGrid"></div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="overview">ภาพรวมการลงทะเบียน</button>
+    <button class="tab-btn" data-tab="checkin">เช็คอินวันงาน</button>
   </div>
 
-  <div class="card">
-    <h2>สรุปตามสาขา</h2>
-    <div class="table-scroll">
-      <table id="branchTable">
-        <thead><tr><th>สาขา</th><th>หน่วยงานที่ลงทะเบียนแล้ว</th><th>จำนวนผู้ลงทะเบียน</th></tr></thead>
-        <tbody></tbody>
-      </table>
+  <div class="tab-panel active" id="panel-overview">
+    <div class="card">
+      <div class="stat-grid" id="statGrid"></div>
+    </div>
+
+    <div class="card">
+      <h2>สรุปตามสาขา</h2>
+      <div class="table-scroll">
+        <table id="branchTable">
+          <thead><tr><th>สาขา</th><th>หน่วยงานที่ลงทะเบียนแล้ว</th><th>จำนวนผู้ลงทะเบียน</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>รายชื่อผู้ลงทะเบียนทั้งหมด</h2>
+      <div class="toolbar">
+        <input type="text" id="searchBox" placeholder="ค้นหาชื่อ / หน่วยงาน / ตำแหน่ง / เบอร์โทร..." />
+        <select id="branchFilter">
+          <option value="">ทุกสาขา</option>
+        </select>
+        <a class="btn btn-primary" id="exportBtn" href="#" style="text-decoration:none">ดาวน์โหลด CSV</a>
+      </div>
+      <div class="table-scroll">
+        <table id="regTable">
+          <thead>
+            <tr>
+              <th>เวลาลงทะเบียน</th>
+              <th>ชื่อ-นามสกุล</th>
+              <th>เบอร์โทร</th>
+              <th>อีเมล</th>
+              <th>ตำแหน่ง</th>
+              <th>หน่วยงาน</th>
+              <th>สาขา</th>
+              <th>สถานะ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="emptyState" style="display:none">ยังไม่มีข้อมูลการลงทะเบียน</div>
     </div>
   </div>
 
-  <div class="card">
-    <h2>สรุปตามหน่วยงาน (ที่นั่ง 5 ต่อหน่วยงาน)</h2>
-    <div class="table-scroll">
-      <table class="org-summary-table" id="orgTable">
-        <thead><tr><th>หน่วยงาน</th><th>สาขา</th><th>จำนวน</th><th>สถานะ</th></tr></thead>
-        <tbody></tbody>
-      </table>
+  <div class="tab-panel" id="panel-checkin">
+    <div class="card">
+      <div class="stat-grid" id="checkinStatGrid"></div>
     </div>
-  </div>
-
-  <div class="card">
-    <h2>รายชื่อผู้ลงทะเบียนทั้งหมด</h2>
-    <div class="toolbar">
-      <input type="text" id="searchBox" placeholder="ค้นหาชื่อ / หน่วยงาน / ตำแหน่ง..." />
-      <select id="branchFilter">
-        <option value="">ทุกสาขา</option>
-      </select>
-      <a class="btn btn-primary" id="exportBtn" href="#" style="text-decoration:none">ดาวน์โหลด CSV</a>
+    <div class="card">
+      <h2>สถานะเช็คอินตามหน่วยงาน (เพดาน 5 ที่นั่ง/หน่วยงาน)</h2>
+      <div class="table-scroll">
+        <table class="org-summary-table" id="checkinOrgTable">
+          <thead><tr><th>หน่วยงาน</th><th>สาขา</th><th>ลงทะเบียน</th><th>เช็คอินแล้ว</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
-    <div class="table-scroll">
-      <table id="regTable">
-        <thead>
-          <tr>
-            <th>เวลาลงทะเบียน</th>
-            <th>ชื่อ-นามสกุล</th>
-            <th>ตำแหน่ง</th>
-            <th>หน่วยงาน</th>
-            <th>สาขา</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="empty" id="emptyState" style="display:none">ยังไม่มีข้อมูลการลงทะเบียน</div>
   </div>
 </div>
 
@@ -166,6 +199,23 @@
 
   const loginCard = document.getElementById('loginCard');
   const dashboard = document.getElementById('dashboard');
+
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'checkin') loadCheckinSummary();
+    });
+  });
+
+  async function authedFetch(url, opts) {
+    const sep = url.includes('?') ? '&' : '?';
+    const res = await fetch(url + sep + 'key=' + encodeURIComponent(adminKey), opts);
+    if (res.status === 403) throw new Error('unauthorized');
+    return res;
+  }
 
   async function tryLoad(key) {
     const res = await fetch('/api/admin/registrations?key=' + encodeURIComponent(key));
@@ -214,6 +264,9 @@
     try {
       allRegs = await tryLoad(adminKey);
       render();
+      if (document.getElementById('panel-checkin').classList.contains('active')) {
+        loadCheckinSummary();
+      }
       document.getElementById('lastUpdated').textContent =
         'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
     } catch (e) {
@@ -232,6 +285,8 @@
   document.getElementById('searchBox').addEventListener('input', render);
   document.getElementById('branchFilter').addEventListener('change', render);
 
+  let confirmDeleteId = null;
+
   function render() {
     const search = document.getElementById('searchBox').value.trim().toLowerCase();
     const branchFilter = document.getElementById('branchFilter').value;
@@ -240,30 +295,24 @@
     if (branchFilter) filtered = filtered.filter((r) => r.branch === branchFilter);
     if (search) {
       filtered = filtered.filter((r) =>
-        [r.fullName, r.orgName, r.position].some((v) => (v || '').toLowerCase().includes(search))
+        [r.fullName, r.orgName, r.position, r.phone, r.email].some((v) => (v || '').toLowerCase().includes(search))
       );
     }
 
-    // --- stats ---
-    const totalOrgs = new Set(allRegs.map((r) => r.orgName)).size;
-    const totalBranches = new Set(allRegs.map((r) => r.branch)).size;
-    const fullOrgCount = Object.values(
-      allRegs.reduce((acc, r) => {
-        acc[r.orgName] = (acc[r.orgName] || 0) + 1;
-        return acc;
-      }, {})
-    ).filter((c) => c >= 5).length;
+    const activeRegs = allRegs.filter((r) => !r.isReplaced);
+    const totalOrgs = new Set(activeRegs.map((r) => r.orgName)).size;
+    const totalBranches = new Set(activeRegs.map((r) => r.branch)).size;
+    const totalCheckedIn = activeRegs.filter((r) => r.isCheckedIn).length;
 
     document.getElementById('statGrid').innerHTML = `
-      <div class="stat-box"><div class="num">${allRegs.length}</div><div class="label">ผู้ลงทะเบียนทั้งหมด</div></div>
+      <div class="stat-box"><div class="num">${activeRegs.length}</div><div class="label">ผู้ลงทะเบียนทั้งหมด</div></div>
       <div class="stat-box"><div class="num">${totalOrgs}</div><div class="label">หน่วยงานที่ลงทะเบียน</div></div>
       <div class="stat-box"><div class="num">${totalBranches}</div><div class="label">สาขาที่มีผู้ลงทะเบียน</div></div>
-      <div class="stat-box"><div class="num">${fullOrgCount}</div><div class="label">หน่วยงานที่เต็มโควต้า (5/5)</div></div>
+      <div class="stat-box green"><div class="num">${totalCheckedIn}</div><div class="label">เช็คอินแล้ว (ทุกหน่วยงาน)</div></div>
     `;
 
-    // --- branch summary ---
     const branchAgg = {};
-    allRegs.forEach((r) => {
+    activeRegs.forEach((r) => {
       if (!branchAgg[r.branch]) branchAgg[r.branch] = { orgs: new Set(), count: 0 };
       branchAgg[r.branch].orgs.add(r.orgName);
       branchAgg[r.branch].count += 1;
@@ -278,42 +327,91 @@
     document.querySelector('#branchTable tbody').innerHTML =
       branchRows || '<tr><td colspan="3" class="empty">ยังไม่มีข้อมูล</td></tr>';
 
-    // --- org summary ---
-    const orgAgg = {};
-    allRegs.forEach((r) => {
-      if (!orgAgg[r.orgName]) orgAgg[r.orgName] = { branch: r.branch, count: 0 };
-      orgAgg[r.orgName].count += 1;
-    });
-    const orgRows = Object.entries(orgAgg)
-      .sort((a, b) => b[1].count - a[1].count)
-      .map(([org, agg]) => {
-        const full = agg.count >= 5;
-        return `<tr>
-          <td>${escapeHtml(org)}</td>
-          <td>${escapeHtml(agg.branch)}</td>
-          <td>${agg.count}/5</td>
-          <td><span class="pill ${full ? 'full' : 'ok'}">${full ? 'เต็มแล้ว' : 'ว่าง'}</span></td>
-        </tr>`;
-      })
-      .join('');
-    document.querySelector('#orgTable tbody').innerHTML =
-      orgRows || '<tr><td colspan="4" class="empty">ยังไม่มีข้อมูล</td></tr>';
-
-    // --- registration table ---
     const sorted = [...filtered].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     const rows = sorted
-      .map(
-        (r) => `<tr>
+      .map((r) => {
+        let statusPill = '<span class="pill muted">ลงทะเบียนแล้ว</span>';
+        if (r.isReplaced) statusPill = '<span class="pill muted">ถูกแทนที่แล้ว</span>';
+        else if (r.isCheckedIn) statusPill = '<span class="pill ok">เช็คอินแล้ว</span>';
+        else if (r.replacesRegistrationId) statusPill += ' <span class="pill info">ผู้แทน</span>';
+
+        const deleteBtn = confirmDeleteId === r.id
+          ? `<button class="btn btn-danger btn-sm" data-confirm-delete="${r.id}">ยืนยันลบ</button>
+             <button class="btn btn-secondary btn-sm" data-cancel-delete="1">ยกเลิก</button>`
+          : `<button class="btn btn-secondary btn-sm" data-delete="${r.id}">ลบ</button>`;
+
+        return `<tr class="${r.isReplaced ? 'replaced-row' : ''}">
           <td>${formatDate(r.timestamp)}</td>
           <td>${escapeHtml(r.fullName)}</td>
+          <td>${escapeHtml(r.phone)}</td>
+          <td>${escapeHtml(r.email)}</td>
           <td>${escapeHtml(r.position)}</td>
           <td>${escapeHtml(r.orgName)}</td>
           <td>${escapeHtml(r.branch)}</td>
-        </tr>`
-      )
+          <td>${statusPill}</td>
+          <td>${deleteBtn}</td>
+        </tr>`;
+      })
       .join('');
     document.querySelector('#regTable tbody').innerHTML = rows;
     document.getElementById('emptyState').style.display = sorted.length ? 'none' : 'block';
+
+    document.querySelectorAll('[data-delete]').forEach((btn) => {
+      btn.addEventListener('click', () => { confirmDeleteId = btn.dataset.delete; render(); });
+    });
+    document.querySelectorAll('[data-cancel-delete]').forEach((btn) => {
+      btn.addEventListener('click', () => { confirmDeleteId = null; render(); });
+    });
+    document.querySelectorAll('[data-confirm-delete]').forEach((btn) => {
+      btn.addEventListener('click', () => deleteRegistration(btn.dataset.confirmDelete));
+    });
+  }
+
+  async function deleteRegistration(id) {
+    try {
+      const res = await authedFetch('/api/admin/registrations/' + id, { method: 'DELETE' });
+      if (!res.ok) throw new Error('failed');
+      confirmDeleteId = null;
+      await refresh();
+    } catch (e) {
+      alert('ลบไม่สำเร็จ กรุณาลองใหม่');
+    }
+  }
+
+  async function loadCheckinSummary() {
+    try {
+      const res = await authedFetch('/api/admin/checkin-summary');
+      const data = await res.json();
+
+      document.getElementById('checkinStatGrid').innerHTML = `
+        <div class="stat-box"><div class="num">${data.totalActive}</div><div class="label">ผู้ลงทะเบียนทั้งหมด</div></div>
+        <div class="stat-box green"><div class="num">${data.totalCheckedIn}</div><div class="label">เช็คอินแล้ว</div></div>
+        <div class="stat-box"><div class="num">${data.totalActive - data.totalCheckedIn}</div><div class="label">ยังไม่เช็คอิน</div></div>
+        <div class="stat-box"><div class="num">${data.orgs.length}</div><div class="label">หน่วยงานทั้งหมด</div></div>
+      `;
+
+      const rows = data.orgs
+        .sort((a, b) => b.checkedIn - a.checkedIn)
+        .map((o) => {
+          const pct = Math.min(100, Math.round((o.checkedIn / data.cap) * 100));
+          const full = o.checkedIn >= data.cap;
+          return `<tr>
+            <td>${escapeHtml(o.orgName)}</td>
+            <td>${escapeHtml(o.branch)}</td>
+            <td>${o.registered}</td>
+            <td>
+              <div class="progress-bar"><div class="progress-bar-fill ${full ? 'full' : ''}" style="width:${pct}%"></div></div>
+              ${o.checkedIn}/${data.cap}
+            </td>
+            <td>${full ? '<span class="pill full">เต็มแล้ว</span>' : '<span class="pill ok">ว่าง</span>'}</td>
+          </tr>`;
+        })
+        .join('');
+      document.querySelector('#checkinOrgTable tbody').innerHTML =
+        rows || '<tr><td colspan="5" class="empty">ยังไม่มีข้อมูล</td></tr>';
+    } catch (e) {
+      // ignore — refresh() handles auth failure globally
+    }
   }
 
   function formatDate(iso) {

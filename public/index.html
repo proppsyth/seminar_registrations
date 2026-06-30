@@ -6,58 +6,114 @@
 <title>ลงทะเบียนเข้าร่วมสัมมนา</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; }
   body {
     font-family: 'Noto Sans Thai', 'Segoe UI', sans-serif;
     background: #f3f4f6;
     margin: 0;
-    padding: 16px;
+    padding: 0 0 16px;
     color: #1f2937;
   }
-  .container { max-width: 640px; margin: 0 auto; }
+  .container { max-width: 640px; margin: 0 auto; padding: 28px 16px 0; }
+
+  .banner-wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px 16px 0;
+  }
+  .banner-img {
+    width: 100%;
+    display: block;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(15,23,42,0.12);
+  }
+  .event-meta-bar {
+    background: #1e3a8a;
+    color: #fff;
+    border-radius: 12px;
+    padding: 12px 18px;
+    margin-top: 12px;
+    margin-bottom: -16px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(30,58,138,0.25);
+  }
+  .event-meta-bar p.event-meta {
+    font-size: 0.85rem;
+    opacity: 0.95;
+    margin: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
   .card {
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(15,23,42,0.08);
+    padding: 22px;
     margin-bottom: 16px;
+    position: relative;
+    z-index: 2;
   }
-  h1 { font-size: 1.25rem; margin: 0 0 6px; }
-  h2 { font-size: 1rem; margin: 0 0 12px; color: #374151; }
-  p.meta { color: #6b7280; font-size: 0.875rem; margin: 0 0 4px; }
-  label { display: block; font-size: 0.9rem; font-weight: 600; margin: 14px 0 6px; }
-  select, input[type=text] {
-    width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px;
-    font-size: 1rem; font-family: inherit;
+  h2 { font-size: 1rem; margin: 0 0 14px; color: #111827; font-weight: 700; }
+  .field-row { display: grid; grid-template-columns: 100px 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .field-row { grid-template-columns: 1fr 1fr; } .field-row > div:first-child { grid-column: 1 / -1; } }
+
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin: 14px 0 6px; color: #374151; }
+  select, input[type=text], input[type=tel], input[type=email] {
+    width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 10px;
+    font-size: 1rem; font-family: inherit; background: #fff;
   }
+  select:focus, input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
   select:disabled { background: #f3f4f6; color: #9ca3af; }
-  .consent-block { background: #f9fafb; border-radius: 8px; padding: 12px; margin-top: 12px; }
+
+  .substitute-toggle {
+    margin-top: 16px; padding: 12px; background: #fffbeb; border: 1px solid #fde68a;
+    border-radius: 10px;
+  }
+  .substitute-toggle label.checkbox-label {
+    display: flex; align-items: center; gap: 8px; font-weight: 600; color: #92400e; margin: 0;
+    cursor: pointer;
+  }
+  .substitute-toggle p.hint { font-size: 0.78rem; color: #92400e; margin: 6px 0 0; opacity: 0.85; }
+  #substituteSelectWrap { margin-top: 10px; display: none; }
+
+  .consent-block { background: #f9fafb; border-radius: 10px; padding: 12px; margin-top: 16px; }
   .consent-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
   .consent-row input[type=checkbox] { margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0; }
-  .consent-row span { font-size: 0.85rem; line-height: 1.5; color: #374151; }
+  .consent-row span { font-size: 0.82rem; line-height: 1.5; color: #374151; }
+
   button[type=submit] {
     width: 100%; padding: 14px; background: #2563eb; color: #fff; border: none;
-    border-radius: 8px; font-size: 1rem; font-weight: 600; margin-top: 16px; cursor: pointer;
+    border-radius: 10px; font-size: 1rem; font-weight: 700; margin-top: 18px; cursor: pointer;
+    transition: background 0.15s;
   }
+  button[type=submit]:hover { background: #1d4ed8; }
   button[type=submit]:disabled { background: #9ca3af; cursor: not-allowed; }
-  .msg { padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 0.9rem; }
+
+  .msg { padding: 12px; border-radius: 10px; margin-top: 12px; font-size: 0.9rem; }
   .msg.error { background: #fee2e2; color: #b91c1c; }
   .msg.success { background: #dcfce7; color: #15803d; }
-  .org-status { font-size: 0.8rem; color: #6b7280; margin-top: 4px; }
-  .org-status.full { color: #b91c1c; font-weight: 600; }
+  .static-field {
+    padding: 10px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px;
+    font-size: 0.95rem; color: #374151;
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="card">
-    <h1>ลงทะเบียนเข้าร่วมสัมมนา</h1>
-    <p class="meta">การเตรียมความพร้อมเพื่อรองรับพระราชบัญญัติการเปลี่ยนแปลงสภาพภูมิอากาศ พ.ศ. …. และการจัดทำรายงานประเมินประสิทธิภาพเชิงนิเวศเศรษฐกิจ ระยะที่ 3 ของรัฐวิสาหกิจ</p>
-    <p class="meta">วันพฤหัสบดีที่ 16 กรกฎาคม 2569 เวลา 08.30 – 12.00 น.</p>
-    <p class="meta">ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์</p>
-  </div>
 
+<div class="banner-wrap">
+  <img class="banner-img" src="/images/banner.png" alt="การเตรียมความพร้อมเพื่อรองรับพระราชบัญญัติการเปลี่ยนแปลงสภาพภูมิอากาศ" />
+  <div class="event-meta-bar">
+    <p class="event-meta">📅 วันพฤหัสบดีที่ 16 กรกฎาคม 2569 เวลา 08.30 – 12.00 น.</p>
+    <p class="event-meta">📍 ห้องแคทลียา โรงแรมรามา การ์เด้นส์</p>
+  </div>
+</div>
+
+<div class="container">
   <form class="card" id="regForm">
     <h2>ข้อมูลผู้ลงทะเบียน</h2>
 
@@ -70,19 +126,48 @@
     <select id="orgName" required disabled>
       <option value="">-- เลือกสาขาก่อน --</option>
     </select>
-    <div class="org-status" id="orgStatus"></div>
 
-    <label for="fullName">คำนำหน้า ชื่อ-นามสกุล *</label>
-    <input type="text" id="fullName" placeholder="เช่น นายสมชาย ใจดี" required />
+    <label>คำนำหน้า / ชื่อ / นามสกุล *</label>
+    <div class="field-row">
+      <div>
+        <select id="title" required>
+          <option value="">คำนำหน้า</option>
+          <option value="นาย">นาย</option>
+          <option value="นาง">นาง</option>
+          <option value="นางสาว">นางสาว</option>
+          <option value="ดร.">ดร.</option>
+          <option value="อื่นๆ">อื่นๆ</option>
+        </select>
+      </div>
+      <div><input type="text" id="firstName" placeholder="ชื่อ" required /></div>
+      <div><input type="text" id="lastName" placeholder="นามสกุล" required /></div>
+    </div>
+
+    <label for="phone">เบอร์โทรศัพท์ *</label>
+    <input type="tel" id="phone" placeholder="0812345678" required />
+
+    <label for="email">อีเมล (ถ้ามี)</label>
+    <input type="email" id="email" placeholder="name@example.com" />
 
     <label for="position">ตำแหน่ง *</label>
     <input type="text" id="position" required />
 
     <label>วันที่เข้าร่วมการอบรม</label>
-    <div style="padding: 10px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.95rem; color: #374151;">
-      วันพฤหัสบดีที่ 16 กรกฎาคม 2569 ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์
-    </div>
+    <div class="static-field">วันพฤหัสบดีที่ 16 กรกฎาคม 2569 ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์</div>
     <input type="hidden" id="trainingDate" value="วันพฤหัสบดีที่ 16 กรกฎาคม 2569 ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์" />
+
+    <div class="substitute-toggle">
+      <label class="checkbox-label">
+        <input type="checkbox" id="isSubstitute" />
+        ลงทะเบียนแทนผู้ที่ลงทะเบียนไว้แล้วแต่ไม่สามารถเข้าร่วมได้
+      </label>
+      <p class="hint">ใช้กรณีฉุกเฉิน เช่น มีคนลงทะเบียนไว้แล้วแต่มาไม่ได้ ท่านมาแทนโดยกรอกข้อมูลของท่านเอง แล้วเลือกชื่อผู้ที่ไม่มาด้านล่าง</p>
+      <div id="substituteSelectWrap">
+        <select id="substituteFor">
+          <option value="">-- เลือกสาขาและหน่วยงานก่อน --</option>
+        </select>
+      </div>
+    </div>
 
     <div class="consent-block">
       <div class="consent-row">
@@ -108,16 +193,19 @@
   </form>
 
   <div style="text-align:center; padding: 4px 0 16px;">
-    <a href="/admin.html" style="font-size: 0.8rem; color: #9ca3af;">สำหรับผู้ดูแลระบบ</a>
+    <a href="/admin.html" style="font-size: 0.8rem; color: #9ca3af; margin-right: 12px;">สำหรับผู้ดูแลระบบ</a>
+    <a href="/checkin.html" style="font-size: 0.8rem; color: #9ca3af;">เช็คอินวันงาน</a>
   </div>
 </div>
 
 <script>
   const branchSelect = document.getElementById('branch');
   const orgSelect = document.getElementById('orgName');
-  const orgStatus = document.getElementById('orgStatus');
   const submitBtn = document.getElementById('submitBtn');
   const msgEl = document.getElementById('msg');
+  const isSubstitute = document.getElementById('isSubstitute');
+  const substituteWrap = document.getElementById('substituteSelectWrap');
+  const substituteFor = document.getElementById('substituteFor');
   let branchesData = {};
 
   fetch('/api/branches')
@@ -135,8 +223,6 @@
   branchSelect.addEventListener('change', () => {
     const branch = branchSelect.value;
     orgSelect.innerHTML = '';
-    orgStatus.textContent = '';
-    orgStatus.className = 'org-status';
     if (!branch) {
       orgSelect.disabled = true;
       orgSelect.innerHTML = '<option value="">-- เลือกสาขาก่อน --</option>';
@@ -150,25 +236,42 @@
       opt.textContent = org;
       orgSelect.appendChild(opt);
     });
+    refreshSubstituteOptions();
   });
 
-  orgSelect.addEventListener('change', async () => {
-    orgStatus.textContent = '';
-    orgStatus.className = 'org-status';
-    submitBtn.disabled = false;
-    if (!orgSelect.value) return;
-    try {
-      const res = await fetch('/api/org-count?orgName=' + encodeURIComponent(orgSelect.value));
-      const data = await res.json();
-      if (data.remaining <= 0) {
-        orgStatus.textContent = 'หน่วยงานนี้มีผู้ลงทะเบียนครบ 5 ท่านแล้ว ไม่สามารถลงทะเบียนเพิ่มได้';
-        orgStatus.className = 'org-status full';
-        submitBtn.disabled = true;
-      } else {
-        orgStatus.textContent = `ลงทะเบียนแล้ว ${data.count}/5 ท่าน (เหลือ ${data.remaining} ที่นั่ง)`;
-      }
-    } catch (e) {}
+  orgSelect.addEventListener('change', refreshSubstituteOptions);
+
+  isSubstitute.addEventListener('change', () => {
+    substituteWrap.style.display = isSubstitute.checked ? 'block' : 'none';
+    if (isSubstitute.checked) refreshSubstituteOptions();
   });
+
+  async function refreshSubstituteOptions() {
+    if (!isSubstitute.checked) return;
+    substituteFor.innerHTML = '<option value="">กำลังโหลด...</option>';
+    if (!orgSelect.value) {
+      substituteFor.innerHTML = '<option value="">-- เลือกสาขาและหน่วยงานก่อน --</option>';
+      return;
+    }
+    try {
+      const res = await fetch('/api/org-registrations?orgName=' + encodeURIComponent(orgSelect.value));
+      const data = await res.json();
+      substituteFor.innerHTML = '';
+      if (!data.length) {
+        substituteFor.innerHTML = '<option value="">ยังไม่มีผู้ลงทะเบียนในหน่วยงานนี้</option>';
+        return;
+      }
+      substituteFor.innerHTML = '<option value="">-- เลือกชื่อที่จะลงทะเบียนแทน --</option>';
+      data.forEach((r) => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = `${r.fullName} (${r.position})`;
+        substituteFor.appendChild(opt);
+      });
+    } catch (e) {
+      substituteFor.innerHTML = '<option value="">โหลดรายชื่อไม่สำเร็จ</option>';
+    }
+  }
 
   document.getElementById('regForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -176,14 +279,24 @@
     const payload = {
       branch: branchSelect.value,
       orgName: orgSelect.value,
-      fullName: document.getElementById('fullName').value,
+      title: document.getElementById('title').value,
+      firstName: document.getElementById('firstName').value,
+      lastName: document.getElementById('lastName').value,
+      phone: document.getElementById('phone').value,
+      email: document.getElementById('email').value,
       position: document.getElementById('position').value,
       trainingDate: document.getElementById('trainingDate').value,
       ackPurpose: document.getElementById('ackPurpose').checked,
       consentGeneral: document.getElementById('consentGeneral').checked,
       consentSensitive: document.getElementById('consentSensitive').checked,
       ackWithdraw: document.getElementById('ackWithdraw').checked,
+      replacesRegistrationId: isSubstitute.checked ? substituteFor.value || null : null,
     };
+
+    if (isSubstitute.checked && !payload.replacesRegistrationId) {
+      msgEl.innerHTML = '<div class="msg error">กรุณาเลือกชื่อผู้ที่ท่านลงทะเบียนแทน</div>';
+      return;
+    }
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'กำลังบันทึก...';
@@ -203,7 +316,7 @@
         document.getElementById('regForm').reset();
         orgSelect.innerHTML = '<option value="">-- เลือกสาขาก่อน --</option>';
         orgSelect.disabled = true;
-        orgStatus.textContent = '';
+        substituteWrap.style.display = 'none';
       }
     } catch (err) {
       msgEl.innerHTML = '<div class="msg error">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>';

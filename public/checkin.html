@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>เช็คอินวันสัมมนา</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans Thai', 'Segoe UI', sans-serif;
+    background: #f3f4f6;
+    margin: 0;
+    padding: 16px;
+    color: #1f2937;
+  }
+  .container { max-width: 640px; margin: 0 auto; }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(15,23,42,0.08);
+    padding: 22px;
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 1.2rem; margin: 0 0 4px; }
+  p.sub { color: #6b7280; font-size: 0.85rem; margin: 0 0 16px; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin: 12px 0 6px; color: #374151; }
+  select {
+    width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 10px;
+    font-size: 1rem; background: #fff;
+  }
+  select:disabled { background: #f3f4f6; color: #9ca3af; }
+
+  .cap-banner {
+    margin-top: 16px; padding: 12px 14px; border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .cap-banner.ok { background: #eff6ff; color: #1d4ed8; }
+  .cap-banner.full { background: #fee2e2; color: #b91c1c; }
+
+  .person-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .person-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 10px;
+  }
+  .person-row.checked-in { background: #f0fdf4; border-color: #bbf7d0; }
+  .person-row.replaced { opacity: 0.5; }
+  .person-name { font-weight: 600; font-size: 0.92rem; }
+  .person-meta { font-size: 0.78rem; color: #6b7280; margin-top: 2px; }
+  .checkin-btn {
+    padding: 8px 16px; border-radius: 8px; border: none; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    background: #2563eb; color: #fff; white-space: nowrap;
+  }
+  .checkin-btn:disabled { background: #d1fae5; color: #15803d; cursor: default; }
+  .checkin-btn.full { background: #9ca3af; cursor: not-allowed; }
+  .empty { text-align: center; color: #9ca3af; padding: 24px; font-size: 0.9rem; }
+  .msg { padding: 10px 12px; border-radius: 10px; margin-top: 10px; font-size: 0.85rem; }
+  .msg.error { background: #fee2e2; color: #b91c1c; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>เช็คอินเข้าร่วมสัมมนา</h1>
+    <p class="sub">เลือกสาขาและหน่วยงานของท่าน แล้วเลือกชื่อของท่านเพื่อเช็คอิน</p>
+
+    <label for="branch">สาขาที่สังกัด</label>
+    <select id="branch">
+      <option value="">-- เลือกสาขา --</option>
+    </select>
+
+    <label for="orgName">รายชื่อรัฐวิสาหกิจ/สคร.</label>
+    <select id="orgName" disabled>
+      <option value="">-- เลือกสาขาก่อน --</option>
+    </select>
+
+    <div id="capBanner" class="cap-banner" style="display:none"></div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card" id="listCard" style="display:none">
+    <h1 style="font-size:1rem">รายชื่อที่ลงทะเบียนไว้</h1>
+    <div class="person-list" id="personList"></div>
+  </div>
+</div>
+
+<script>
+  const branchSelect = document.getElementById('branch');
+  const orgSelect = document.getElementById('orgName');
+  const capBanner = document.getElementById('capBanner');
+  const listCard = document.getElementById('listCard');
+  const personList = document.getElementById('personList');
+  const msgEl = document.getElementById('msg');
+  let branchesData = {};
+
+  fetch('/api/branches')
+    .then((r) => r.json())
+    .then((data) => {
+      branchesData = data;
+      Object.keys(data).forEach((branch) => {
+        const opt = document.createElement('option');
+        opt.value = branch;
+        opt.textContent = branch;
+        branchSelect.appendChild(opt);
+      });
+    });
+
+  branchSelect.addEventListener('change', () => {
+    const branch = branchSelect.value;
+    orgSelect.innerHTML = '';
+    listCard.style.display = 'none';
+    capBanner.style.display = 'none';
+    if (!branch) {
+      orgSelect.disabled = true;
+      orgSelect.innerHTML = '<option value="">-- เลือกสาขาก่อน --</option>';
+      return;
+    }
+    orgSelect.disabled = false;
+    orgSelect.innerHTML = '<option value="">-- เลือกหน่วยงาน --</option>';
+    (branchesData[branch] || []).forEach((org) => {
+      const opt = document.createElement('option');
+      opt.value = org;
+      opt.textContent = org;
+      orgSelect.appendChild(opt);
+    });
+  });
+
+  orgSelect.addEventListener('change', loadOrg);
+
+  async function loadOrg() {
+    msgEl.innerHTML = '';
+    if (!orgSelect.value) {
+      listCard.style.display = 'none';
+      capBanner.style.display = 'none';
+      return;
+    }
+    const [regsRes, countRes] = await Promise.all([
+      fetch('/api/org-registrations?orgName=' + encodeURIComponent(orgSelect.value)),
+      fetch('/api/checkin-count?orgName=' + encodeURIComponent(orgSelect.value)),
+    ]);
+    const regs = await regsRes.json();
+    const countInfo = await countRes.json();
+
+    capBanner.style.display = 'flex';
+    capBanner.className = 'cap-banner ' + (countInfo.remaining > 0 ? 'ok' : 'full');
+    capBanner.innerHTML = `<span>เช็คอินแล้ว ${countInfo.count}/${countInfo.cap} ที่นั่ง</span>` +
+      (countInfo.remaining > 0 ? `<span>เหลือ ${countInfo.remaining} ที่นั่ง</span>` : '<span>เต็มแล้ว</span>');
+
+    listCard.style.display = 'block';
+    renderList(regs, countInfo);
+  }
+
+  function renderList(regs, countInfo) {
+    if (!regs.length) {
+      personList.innerHTML = '<div class="empty">ยังไม่มีผู้ลงทะเบียนในหน่วยงานนี้</div>';
+      return;
+    }
+    personList.innerHTML = regs
+      .map((r) => {
+        const rowClass = r.isCheckedIn ? 'checked-in' : '';
+        const disableBtn = r.isCheckedIn || countInfo.remaining <= 0;
+        const btnLabel = r.isCheckedIn ? '✓ เช็คอินแล้ว' : (countInfo.remaining <= 0 ? 'ที่นั่งเต็ม' : 'เช็คอิน');
+        const btnClass = r.isCheckedIn ? '' : (countInfo.remaining <= 0 ? 'full' : '');
+        return `<div class="person-row ${rowClass}">
+          <div>
+            <div class="person-name">${escapeHtml(r.fullName)}</div>
+            <div class="person-meta">${escapeHtml(r.position)}</div>
+          </div>
+          <button class="checkin-btn ${btnClass}" data-id="${r.id}" ${disableBtn ? 'disabled' : ''}>${btnLabel}</button>
+        </div>`;
+      })
+      .join('');
+
+    personList.querySelectorAll('.checkin-btn:not([disabled])').forEach((btn) => {
+      btn.addEventListener('click', () => doCheckin(btn.dataset.id));
+    });
+  }
+
+  async function doCheckin(id) {
+    msgEl.innerHTML = '';
+    try {
+      const res = await fetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registrationId: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        msgEl.innerHTML = `<div class="msg error">${data.error || 'เกิดข้อผิดพลาด'}</div>`;
+        return;
+      }
+      await loadOrg();
+    } catch (e) {
+      msgEl.innerHTML = '<div class="msg error">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>';
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+</script>
+</body>
+</html>
