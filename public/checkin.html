@@ -13,16 +13,28 @@
     font-family: 'Noto Sans Thai', 'Segoe UI', sans-serif;
     background: #f3f4f6;
     margin: 0;
-    padding: 16px;
+    padding: 0 0 16px;
     color: #1f2937;
   }
-  .container { max-width: 640px; margin: 0 auto; }
+  .container { max-width: 640px; margin: 0 auto; padding: 28px 16px 0; }
+
+  .banner-wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 0; }
+  .banner-img { width: 100%; display: block; border-radius: 16px; box-shadow: 0 4px 16px rgba(15,23,42,0.12); }
+  .event-meta-bar {
+    background: #1e3a8a; color: #fff; border-radius: 12px; padding: 12px 18px;
+    margin-top: 12px; margin-bottom: -16px; position: relative; z-index: 2;
+    box-shadow: 0 4px 12px rgba(30,58,138,0.25);
+  }
+  .event-meta-bar p.event-meta { font-size: 0.85rem; opacity: 0.95; margin: 2px 0; display: flex; align-items: center; gap: 6px; }
+
   .card {
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 4px 16px rgba(15,23,42,0.08);
     padding: 22px;
     margin-bottom: 16px;
+    position: relative;
+    z-index: 2;
   }
   h1 { font-size: 1.2rem; margin: 0 0 4px; }
   p.sub { color: #6b7280; font-size: 0.85rem; margin: 0 0 16px; }
@@ -41,15 +53,13 @@
   .cap-banner.full { background: #fee2e2; color: #b91c1c; }
 
   .person-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
-  .person-row {
-    padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 10px;
-  }
+  .person-row { padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 10px; }
   .person-row.checked-in { background: #f0fdf4; border-color: #bbf7d0; }
   .person-row-main { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .person-name { font-weight: 600; font-size: 0.92rem; }
   .person-meta { font-size: 0.78rem; color: #6b7280; margin-top: 2px; }
   .person-actions { display: flex; gap: 6px; flex-shrink: 0; }
-  .checkin-btn, .replace-btn {
+  .checkin-btn, .replace-btn, .walkin-toggle-btn {
     padding: 8px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 700; cursor: pointer;
     white-space: nowrap;
   }
@@ -58,34 +68,60 @@
   .checkin-btn.full { background: #9ca3af; cursor: not-allowed; }
   .replace-btn { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
   .replace-btn.active { background: #fde68a; }
+  .walkin-toggle-btn { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; width: 100%; padding: 12px; }
+  .walkin-toggle-btn.active { background: #a7f3d0; }
 
   .empty { text-align: center; color: #9ca3af; padding: 24px; font-size: 0.9rem; }
   .msg { padding: 10px 12px; border-radius: 10px; margin-top: 10px; font-size: 0.85rem; }
   .msg.error { background: #fee2e2; color: #b91c1c; }
   .msg.success { background: #dcfce7; color: #15803d; }
 
-  .replace-form {
+  .person-form {
     margin-top: 12px; padding: 14px; background: #fffbeb; border: 1px solid #fde68a;
     border-radius: 10px; display: none;
   }
-  .replace-form.open { display: block; }
-  .replace-form p.hint { font-size: 0.78rem; color: #92400e; margin: 0 0 10px; }
+  .person-form.open { display: block; }
+  .person-form.walkin-form { background: #ecfdf5; border-color: #a7f3d0; }
+  .person-form p.hint { font-size: 0.78rem; color: #92400e; margin: 0 0 10px; }
+  .walkin-form p.hint { color: #047857; }
   .field-row { display: grid; grid-template-columns: 90px 1fr 1fr; gap: 8px; }
   @media (max-width: 480px) { .field-row { grid-template-columns: 1fr 1fr; } .field-row > div:first-child { grid-column: 1 / -1; } }
   .consent-block { background: #fff; border-radius: 8px; padding: 10px; margin-top: 12px; }
   .consent-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
   .consent-row input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0; }
   .consent-row span { font-size: 0.76rem; line-height: 1.45; color: #374151; }
-  .replace-form-actions { display: flex; gap: 8px; margin-top: 12px; }
-  .replace-form-actions button {
+  .person-form-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .person-form-actions button {
     flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 0.85rem; font-weight: 700; cursor: pointer;
   }
   .btn-confirm { background: #2563eb; color: #fff; }
   .btn-cancel { background: #e5e7eb; color: #374151; }
+
+  .lock-screen { text-align: center; padding: 30px 20px; }
+  .lock-screen .icon { font-size: 2.4rem; margin-bottom: 10px; }
+  .lock-screen h1 { font-size: 1.1rem; margin-bottom: 8px; }
+  .lock-screen p { color: #6b7280; font-size: 0.9rem; }
 </style>
 </head>
 <body>
-<div class="container">
+
+<div class="banner-wrap">
+  <img class="banner-img" src="/images/banner.png" alt="การเตรียมความพร้อมเพื่อรองรับพระราชบัญญัติการเปลี่ยนแปลงสภาพภูมิอากาศ" />
+  <div class="event-meta-bar">
+    <p class="event-meta">📅 วันพฤหัสบดีที่ 16 กรกฎาคม 2569 เวลา 08.30 – 12.00 น.</p>
+    <p class="event-meta">📍 ห้องแคทลียา โรงแรมรามา การ์เด้นส์</p>
+  </div>
+</div>
+
+<div class="container" id="lockScreen" style="display:none">
+  <div class="card lock-screen">
+    <div class="icon">🔒</div>
+    <h1>ระบบเช็คอินยังไม่เปิดให้ใช้งาน</h1>
+    <p>ระบบเช็คอินหน้างานจะเปิดให้ใช้งานในเช้าวันพฤหัสบดีที่ 16 กรกฎาคม 2569 กรุณากลับมาใหม่ในวันงาน</p>
+  </div>
+</div>
+
+<div class="container" id="mainScreen" style="display:none">
   <div class="card">
     <h1>เช็คอินเข้าร่วมสัมมนา</h1>
     <p class="sub">เลือกสาขาและหน่วยงาน แล้วเลือกชื่อเพื่อเช็คอิน หรือกด "ลงทะเบียนมาแทน" หากเป็นผู้มาแทนคนที่ลงทะเบียนไว้แต่ไม่ได้มา</p>
@@ -108,36 +144,68 @@
     <h1 style="font-size:1rem">รายชื่อที่ลงทะเบียนไว้</h1>
     <div class="person-list" id="personList"></div>
   </div>
+
+  <div class="card" id="walkinCard" style="display:none">
+    <button class="walkin-toggle-btn" id="walkinToggleBtn">+ ไม่พบชื่อของท่าน / ยังไม่เคยลงทะเบียน — ลงทะเบียนหน้างาน</button>
+    <div class="person-form walkin-form" id="walkinFormWrap"></div>
+  </div>
 </div>
 
 <script>
+  const lockScreen = document.getElementById('lockScreen');
+  const mainScreen = document.getElementById('mainScreen');
   const branchSelect = document.getElementById('branch');
   const orgSelect = document.getElementById('orgName');
   const capBanner = document.getElementById('capBanner');
   const listCard = document.getElementById('listCard');
   const personList = document.getElementById('personList');
+  const walkinCard = document.getElementById('walkinCard');
+  const walkinToggleBtn = document.getElementById('walkinToggleBtn');
+  const walkinFormWrap = document.getElementById('walkinFormWrap');
   const msgEl = document.getElementById('msg');
   let branchesData = {};
   let openReplaceId = null;
+  let walkinOpen = false;
 
-  fetch('/api/branches')
-    .then((r) => r.json())
-    .then((data) => {
-      branchesData = data;
-      Object.keys(data).forEach((branch) => {
-        const opt = document.createElement('option');
-        opt.value = branch;
-        opt.textContent = branch;
-        branchSelect.appendChild(opt);
+  init();
+
+  async function init() {
+    try {
+      const res = await fetch('/api/event-info');
+      const info = await res.json();
+      if (!info.checkinOpen) {
+        lockScreen.style.display = 'block';
+        return;
+      }
+    } catch (e) {
+      // if the check fails, fall through to showing the check-in screen
+    }
+    mainScreen.style.display = 'block';
+    loadBranches();
+  }
+
+  function loadBranches() {
+    fetch('/api/branches')
+      .then((r) => r.json())
+      .then((data) => {
+        branchesData = data;
+        Object.keys(data).forEach((branch) => {
+          const opt = document.createElement('option');
+          opt.value = branch;
+          opt.textContent = branch;
+          branchSelect.appendChild(opt);
+        });
       });
-    });
+  }
 
   branchSelect.addEventListener('change', () => {
     const branch = branchSelect.value;
     orgSelect.innerHTML = '';
     listCard.style.display = 'none';
+    walkinCard.style.display = 'none';
     capBanner.style.display = 'none';
     openReplaceId = null;
+    walkinOpen = false;
     if (!branch) {
       orgSelect.disabled = true;
       orgSelect.innerHTML = '<option value="">-- เลือกสาขาก่อน --</option>';
@@ -153,12 +221,22 @@
     });
   });
 
-  orgSelect.addEventListener('change', () => { openReplaceId = null; loadOrg(); });
+  orgSelect.addEventListener('change', () => {
+    openReplaceId = null;
+    walkinOpen = false;
+    loadOrg();
+  });
+
+  walkinToggleBtn.addEventListener('click', () => {
+    walkinOpen = !walkinOpen;
+    renderWalkin();
+  });
 
   async function loadOrg() {
     msgEl.innerHTML = '';
     if (!orgSelect.value) {
       listCard.style.display = 'none';
+      walkinCard.style.display = 'none';
       capBanner.style.display = 'none';
       return;
     }
@@ -175,7 +253,9 @@
       (countInfo.remaining > 0 ? `<span>เหลือ ${countInfo.remaining} ที่นั่ง</span>` : '<span>เต็มแล้ว</span>');
 
     listCard.style.display = 'block';
+    walkinCard.style.display = 'block';
     renderList(regs, countInfo);
+    renderWalkin();
   }
 
   function renderList(regs, countInfo) {
@@ -206,8 +286,8 @@
               <button class="checkin-btn ${checkinClass}" data-id="${r.id}" ${disableCheckin ? 'disabled' : ''}>${checkinLabel}</button>
             </div>
           </div>
-          <div class="replace-form ${isOpen ? 'open' : ''}" data-replace-form="${r.id}">
-            ${isOpen ? replaceFormHtml(r) : ''}
+          <div class="person-form ${isOpen ? 'open' : ''}" data-replace-form="${r.id}">
+            ${isOpen ? personFormHtml(`rep-${r.id}`, `กรอกข้อมูลของท่านเอง ระบบจะบันทึกว่าท่านมาแทน "${escapeHtml(r.fullName)}" และเช็คอินให้ทันที`) : ''}
           </div>
         </div>`;
       })
@@ -219,26 +299,45 @@
     personList.querySelectorAll('[data-replace]').forEach((btn) => {
       btn.addEventListener('click', () => {
         openReplaceId = openReplaceId === btn.dataset.replace ? null : btn.dataset.replace;
+        walkinOpen = false;
         loadOrg();
       });
     });
     if (openReplaceId) {
-      const form = personList.querySelector(`[data-replace-form="${openReplaceId}"] form`);
+      const wrap = personList.querySelector(`[data-replace-form="${openReplaceId}"]`);
+      const form = wrap ? wrap.querySelector('form') : null;
       if (form) {
-        form.addEventListener('submit', (e) => onReplaceSubmit(e, openReplaceId));
+        form.addEventListener('submit', (e) => onPersonFormSubmit(e, `rep-${openReplaceId}`, openReplaceId));
         const cancelBtn = form.querySelector('.btn-cancel');
         if (cancelBtn) cancelBtn.addEventListener('click', () => { openReplaceId = null; loadOrg(); });
       }
     }
   }
 
-  function replaceFormHtml(originalReg) {
+  function renderWalkin() {
+    walkinToggleBtn.textContent = walkinOpen
+      ? '− ปิดฟอร์มลงทะเบียนหน้างาน'
+      : '+ ไม่พบชื่อของท่าน / ยังไม่เคยลงทะเบียน — ลงทะเบียนหน้างาน';
+    walkinToggleBtn.classList.toggle('active', walkinOpen);
+    walkinFormWrap.classList.toggle('open', walkinOpen);
+    walkinFormWrap.innerHTML = walkinOpen
+      ? personFormHtml('walkin', 'กรอกข้อมูลของท่านเพื่อลงทะเบียนหน้างาน ระบบจะเช็คอินให้ทันทีหลังบันทึก')
+      : '';
+    if (walkinOpen) {
+      const form = walkinFormWrap.querySelector('form');
+      form.addEventListener('submit', (e) => onPersonFormSubmit(e, 'walkin', null));
+      const cancelBtn = form.querySelector('.btn-cancel');
+      cancelBtn.addEventListener('click', () => { walkinOpen = false; renderWalkin(); });
+    }
+  }
+
+  function personFormHtml(prefix, hint) {
     return `
-      <p class="hint">กรอกข้อมูลของท่านเอง ระบบจะบันทึกว่าท่านมาแทน "${escapeHtml(originalReg.fullName)}" และเช็คอินให้ทันที</p>
-      <form data-replace-form-el="1">
+      <p class="hint">${hint}</p>
+      <form>
         <div class="field-row">
           <div>
-            <select id="rep-title-${originalReg.id}" required>
+            <select id="${prefix}-title" required>
               <option value="">คำนำหน้า</option>
               <option value="นาย">นาย</option>
               <option value="นาง">นาง</option>
@@ -247,36 +346,36 @@
               <option value="อื่นๆ">อื่นๆ</option>
             </select>
           </div>
-          <div><input type="text" id="rep-first-${originalReg.id}" placeholder="ชื่อ" required /></div>
-          <div><input type="text" id="rep-last-${originalReg.id}" placeholder="นามสกุล" required /></div>
+          <div><input type="text" id="${prefix}-first" placeholder="ชื่อ" required /></div>
+          <div><input type="text" id="${prefix}-last" placeholder="นามสกุล" required /></div>
         </div>
         <label>เบอร์โทรศัพท์ *</label>
-        <input type="tel" id="rep-phone-${originalReg.id}" placeholder="0812345678" required />
+        <input type="tel" id="${prefix}-phone" placeholder="0812345678" required />
         <label>อีเมล (ถ้ามี)</label>
-        <input type="email" id="rep-email-${originalReg.id}" placeholder="name@example.com" />
+        <input type="email" id="${prefix}-email" placeholder="name@example.com" />
         <label>ตำแหน่ง *</label>
-        <input type="text" id="rep-position-${originalReg.id}" required />
+        <input type="text" id="${prefix}-position" required />
 
         <div class="consent-block">
           <div class="consent-row">
-            <input type="checkbox" id="rep-ack-purpose-${originalReg.id}" required />
+            <input type="checkbox" id="${prefix}-ack-purpose" required />
             <span>ท่านรับทราบวัตถุประสงค์ของการจัดเก็บข้อมูลส่วนบุคคล ของ สคร.</span>
           </div>
           <div class="consent-row">
-            <input type="checkbox" id="rep-consent-general-${originalReg.id}" required />
+            <input type="checkbox" id="${prefix}-consent-general" required />
             <span>ข้าพเจ้ารับทราบและตกลงยินยอมให้ สคร. เก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคลของข้าพเจ้าตามประกาศความเป็นส่วนตัวของ สคร.</span>
           </div>
           <div class="consent-row">
-            <input type="checkbox" id="rep-consent-sensitive-${originalReg.id}" />
+            <input type="checkbox" id="${prefix}-consent-sensitive" />
             <span>ข้าพเจ้ายินยอมให้เก็บข้อมูลส่วนบุคคลที่เป็นข้อมูลอ่อนไหว (หากมี) ตามมาตรา ๒๖ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. ๒๕๖๒</span>
           </div>
           <div class="consent-row">
-            <input type="checkbox" id="rep-ack-withdraw-${originalReg.id}" required />
+            <input type="checkbox" id="${prefix}-ack-withdraw" required />
             <span>ข้าพเจ้าทราบว่าสามารถถอนความยินยอมได้ทุกเมื่อ และการถอนความยินยอมไม่กระทบข้อมูลที่ประมวลผลไปแล้ว</span>
           </div>
         </div>
 
-        <div class="replace-form-actions">
+        <div class="person-form-actions">
           <button type="submit" class="btn-confirm">บันทึกและเช็คอิน</button>
           <button type="button" class="btn-cancel">ยกเลิก</button>
         </div>
@@ -284,27 +383,27 @@
     `;
   }
 
-  async function onReplaceSubmit(e, originalId) {
+  async function onPersonFormSubmit(e, prefix, replacesId) {
     e.preventDefault();
     msgEl.innerHTML = '';
-    const v = (id) => document.getElementById(id).value;
-    const c = (id) => document.getElementById(id).checked;
+    const v = (suffix) => document.getElementById(`${prefix}-${suffix}`).value;
+    const c = (suffix) => document.getElementById(`${prefix}-${suffix}`).checked;
 
     const payload = {
       branch: branchSelect.value,
       orgName: orgSelect.value,
-      title: v(`rep-title-${originalId}`),
-      firstName: v(`rep-first-${originalId}`),
-      lastName: v(`rep-last-${originalId}`),
-      phone: v(`rep-phone-${originalId}`),
-      email: v(`rep-email-${originalId}`),
-      position: v(`rep-position-${originalId}`),
+      title: v('title'),
+      firstName: v('first'),
+      lastName: v('last'),
+      phone: v('phone'),
+      email: v('email'),
+      position: v('position'),
       trainingDate: 'วันพฤหัสบดีที่ 16 กรกฎาคม 2569 ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์',
-      ackPurpose: c(`rep-ack-purpose-${originalId}`),
-      consentGeneral: c(`rep-consent-general-${originalId}`),
-      consentSensitive: c(`rep-consent-sensitive-${originalId}`),
-      ackWithdraw: c(`rep-ack-withdraw-${originalId}`),
-      replacesRegistrationId: originalId,
+      ackPurpose: c('ack-purpose'),
+      consentGeneral: c('consent-general'),
+      consentSensitive: c('consent-sensitive'),
+      ackWithdraw: c('ack-withdraw'),
+      replacesRegistrationId: replacesId,
     };
 
     try {
@@ -331,6 +430,7 @@
         msgEl.innerHTML = `<div class="msg success">บันทึกและเช็คอิน "${escapeHtml(regData.record.fullName)}" สำเร็จ ✓</div>`;
       }
       openReplaceId = null;
+      walkinOpen = false;
       await loadOrg();
     } catch (err) {
       msgEl.innerHTML = '<div class="msg error">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>';

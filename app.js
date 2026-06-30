@@ -6,6 +6,12 @@ const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const CHECKIN_CAP = 5;
+// Check-in only opens on the morning of the event — blocks early check-ins.
+const CHECKIN_OPENS_AT = process.env.CHECKIN_OPENS_AT || '2026-07-16T00:00:00+07:00';
+
+function isCheckinOpen() {
+  return new Date() >= new Date(CHECKIN_OPENS_AT);
+}
 
 const BRANCHES_FILE = path.join(__dirname, 'branches.json');
 const branches = JSON.parse(fs.readFileSync(BRANCHES_FILE, 'utf8'));
@@ -57,6 +63,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/branches', (req, res) => {
   res.json(branches);
+});
+
+app.get('/api/event-info', (req, res) => {
+  res.json({ checkinOpensAt: CHECKIN_OPENS_AT, checkinOpen: isCheckinOpen() });
 });
 
 // List active (non-replaced) registrants for an org — used by the registration page's
@@ -196,6 +206,12 @@ app.get('/api/checkin-count', async (req, res) => {
 app.post('/api/checkin', async (req, res) => {
   const { registrationId } = req.body || {};
   if (!registrationId) return res.status(400).json({ error: 'missing registrationId' });
+
+  if (!isCheckinOpen()) {
+    return res.status(403).json({
+      error: 'ระบบเช็คอินยังไม่เปิดให้ใช้งาน จะเปิดในเช้าวันที่ 16 กรกฎาคม 2569',
+    });
+  }
 
   const { data: reg, error: regError } = await supabase
     .from('seminar_registrations')
