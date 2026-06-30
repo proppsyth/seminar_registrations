@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ลงทะเบียนเข้าร่วมสัมมนา</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans Thai', 'Segoe UI', sans-serif;
+    background: #f3f4f6;
+    margin: 0;
+    padding: 16px;
+    color: #1f2937;
+  }
+  .container { max-width: 640px; margin: 0 auto; }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 1.25rem; margin: 0 0 6px; }
+  h2 { font-size: 1rem; margin: 0 0 12px; color: #374151; }
+  p.meta { color: #6b7280; font-size: 0.875rem; margin: 0 0 4px; }
+  label { display: block; font-size: 0.9rem; font-weight: 600; margin: 14px 0 6px; }
+  select, input[type=text] {
+    width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px;
+    font-size: 1rem; font-family: inherit;
+  }
+  select:disabled { background: #f3f4f6; color: #9ca3af; }
+  .consent-block { background: #f9fafb; border-radius: 8px; padding: 12px; margin-top: 12px; }
+  .consent-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .consent-row input[type=checkbox] { margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0; }
+  .consent-row span { font-size: 0.85rem; line-height: 1.5; color: #374151; }
+  button[type=submit] {
+    width: 100%; padding: 14px; background: #2563eb; color: #fff; border: none;
+    border-radius: 8px; font-size: 1rem; font-weight: 600; margin-top: 16px; cursor: pointer;
+  }
+  button[type=submit]:disabled { background: #9ca3af; cursor: not-allowed; }
+  .msg { padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 0.9rem; }
+  .msg.error { background: #fee2e2; color: #b91c1c; }
+  .msg.success { background: #dcfce7; color: #15803d; }
+  .org-status { font-size: 0.8rem; color: #6b7280; margin-top: 4px; }
+  .org-status.full { color: #b91c1c; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>ลงทะเบียนเข้าร่วมสัมมนา</h1>
+    <p class="meta">การเตรียมความพร้อมเพื่อรองรับพระราชบัญญัติการเปลี่ยนแปลงสภาพภูมิอากาศ พ.ศ. …. และการจัดทำรายงานประเมินประสิทธิภาพเชิงนิเวศเศรษฐกิจ ระยะที่ 3 ของรัฐวิสาหกิจ</p>
+    <p class="meta">วันพฤหัสบดีที่ 16 กรกฎาคม 2569 เวลา 08.30 – 12.00 น.</p>
+    <p class="meta">ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์</p>
+  </div>
+
+  <form class="card" id="regForm">
+    <h2>ข้อมูลผู้ลงทะเบียน</h2>
+
+    <label for="branch">สาขาที่สังกัด *</label>
+    <select id="branch" required>
+      <option value="">-- เลือกสาขา --</option>
+    </select>
+
+    <label for="orgName">รายชื่อรัฐวิสาหกิจ/สคร. *</label>
+    <select id="orgName" required disabled>
+      <option value="">-- เลือกสาขาก่อน --</option>
+    </select>
+    <div class="org-status" id="orgStatus"></div>
+
+    <label for="fullName">คำนำหน้า ชื่อ-นามสกุล *</label>
+    <input type="text" id="fullName" placeholder="เช่น นายสมชาย ใจดี" required />
+
+    <label for="position">ตำแหน่ง *</label>
+    <input type="text" id="position" required />
+
+    <label>วันที่เข้าร่วมการอบรม</label>
+    <div style="padding: 10px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.95rem; color: #374151;">
+      วันพฤหัสบดีที่ 16 กรกฎาคม 2569 ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์
+    </div>
+    <input type="hidden" id="trainingDate" value="วันพฤหัสบดีที่ 16 กรกฎาคม 2569 ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์" />
+
+    <div class="consent-block">
+      <div class="consent-row">
+        <input type="checkbox" id="ackPurpose" required />
+        <span>ท่านรับทราบวัตถุประสงค์ของการจัดเก็บข้อมูลส่วนบุคคล ของ สคร.</span>
+      </div>
+      <div class="consent-row">
+        <input type="checkbox" id="consentGeneral" required />
+        <span>ข้าพเจ้ารับทราบและตกลงยินยอมให้ สคร. เก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคลของข้าพเจ้าที่ได้ให้ไว้หรือมีอยู่กับ สคร. ตามรายละเอียดที่ปรากฏในประกาศความเป็นส่วนตัวของ สคร. ที่เผยแพร่บนเว็บไซต์ของ สคร.</span>
+      </div>
+      <div class="consent-row">
+        <input type="checkbox" id="consentSensitive" />
+        <span>ข้าพเจ้ารับทราบและตกลงยินยอมให้ สคร. เก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคลที่เป็นข้อมูลอ่อนไหวของข้าพเจ้า ตามมาตรา ๒๖ แห่งพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. ๒๕๖๒ (หากมี) — ข้าพเจ้าให้ความยินยอมด้วยความสมัครใจและทราบว่าสามารถถอนความยินยอมได้ทุกเมื่อ</span>
+      </div>
+      <div class="consent-row">
+        <input type="checkbox" id="ackWithdraw" required />
+        <span>ข้าพเจ้าทราบว่าการถอนความยินยอมอาจทำให้ได้รับความสะดวกในการใช้บริการน้อยลง และไม่มีผลกระทบต่อการประมวลผลข้อมูลส่วนบุคคลที่เสร็จสิ้นไปแล้วก่อนการถอนความยินยอม</span>
+      </div>
+    </div>
+
+    <button type="submit" id="submitBtn">ลงทะเบียน</button>
+    <div id="msg"></div>
+  </form>
+
+  <div style="text-align:center; padding: 4px 0 16px;">
+    <a href="/admin.html" style="font-size: 0.8rem; color: #9ca3af;">สำหรับผู้ดูแลระบบ</a>
+  </div>
+</div>
+
+<script>
+  const branchSelect = document.getElementById('branch');
+  const orgSelect = document.getElementById('orgName');
+  const orgStatus = document.getElementById('orgStatus');
+  const submitBtn = document.getElementById('submitBtn');
+  const msgEl = document.getElementById('msg');
+  let branchesData = {};
+
+  fetch('/api/branches')
+    .then((r) => r.json())
+    .then((data) => {
+      branchesData = data;
+      Object.keys(data).forEach((branch) => {
+        const opt = document.createElement('option');
+        opt.value = branch;
+        opt.textContent = branch;
+        branchSelect.appendChild(opt);
+      });
+    });
+
+  branchSelect.addEventListener('change', () => {
+    const branch = branchSelect.value;
+    orgSelect.innerHTML = '';
+    orgStatus.textContent = '';
+    orgStatus.className = 'org-status';
+    if (!branch) {
+      orgSelect.disabled = true;
+      orgSelect.innerHTML = '<option value="">-- เลือกสาขาก่อน --</option>';
+      return;
+    }
+    orgSelect.disabled = false;
+    orgSelect.innerHTML = '<option value="">-- เลือกหน่วยงาน --</option>';
+    (branchesData[branch] || []).forEach((org) => {
+      const opt = document.createElement('option');
+      opt.value = org;
+      opt.textContent = org;
+      orgSelect.appendChild(opt);
+    });
+  });
+
+  orgSelect.addEventListener('change', async () => {
+    orgStatus.textContent = '';
+    orgStatus.className = 'org-status';
+    submitBtn.disabled = false;
+    if (!orgSelect.value) return;
+    try {
+      const res = await fetch('/api/org-count?orgName=' + encodeURIComponent(orgSelect.value));
+      const data = await res.json();
+      if (data.remaining <= 0) {
+        orgStatus.textContent = 'หน่วยงานนี้มีผู้ลงทะเบียนครบ 5 ท่านแล้ว ไม่สามารถลงทะเบียนเพิ่มได้';
+        orgStatus.className = 'org-status full';
+        submitBtn.disabled = true;
+      } else {
+        orgStatus.textContent = `ลงทะเบียนแล้ว ${data.count}/5 ท่าน (เหลือ ${data.remaining} ที่นั่ง)`;
+      }
+    } catch (e) {}
+  });
+
+  document.getElementById('regForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msgEl.innerHTML = '';
+    const payload = {
+      branch: branchSelect.value,
+      orgName: orgSelect.value,
+      fullName: document.getElementById('fullName').value,
+      position: document.getElementById('position').value,
+      trainingDate: document.getElementById('trainingDate').value,
+      ackPurpose: document.getElementById('ackPurpose').checked,
+      consentGeneral: document.getElementById('consentGeneral').checked,
+      consentSensitive: document.getElementById('consentSensitive').checked,
+      ackWithdraw: document.getElementById('ackWithdraw').checked,
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'กำลังบันทึก...';
+
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        msgEl.innerHTML = `<div class="msg error">${data.error || 'เกิดข้อผิดพลาด'}</div>`;
+        submitBtn.disabled = false;
+      } else {
+        msgEl.innerHTML = '<div class="msg success">ลงทะเบียนสำเร็จ บันทึกแล้ว ✓</div>';
+        document.getElementById('regForm').reset();
+        orgSelect.innerHTML = '<option value="">-- เลือกสาขาก่อน --</option>';
+        orgSelect.disabled = true;
+        orgStatus.textContent = '';
+      }
+    } catch (err) {
+      msgEl.innerHTML = '<div class="msg error">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>';
+      submitBtn.disabled = false;
+    } finally {
+      submitBtn.textContent = 'ลงทะเบียน';
+    }
+  });
+</script>
+</body>
+</html>

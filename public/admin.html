@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>แดชบอร์ดผู้ดูแล — รายงานการลงทะเบียน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans Thai', 'Segoe UI', sans-serif;
+    background: #f3f4f6;
+    margin: 0;
+    padding: 16px;
+    color: #1f2937;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  h2 { font-size: 1rem; margin: 0 0 12px; color: #374151; }
+  p.sub { color: #6b7280; font-size: 0.875rem; margin: 0 0 16px; }
+
+  /* login gate */
+  #loginCard { max-width: 360px; margin: 60px auto; text-align: center; }
+  #loginCard input {
+    width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px;
+    font-size: 1rem; margin: 12px 0;
+  }
+  #loginCard button {
+    width: 100%; padding: 12px; background: #2563eb; color: #fff; border: none;
+    border-radius: 8px; font-weight: 600; cursor: pointer;
+  }
+  #loginError { color: #b91c1c; font-size: 0.85rem; margin-top: 8px; min-height: 1.2em; }
+
+  #dashboard { display: none; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .stat-box { background: #f9fafb; border-radius: 10px; padding: 14px; text-align: center; }
+  .stat-box .num { font-size: 1.6rem; font-weight: 700; color: #2563eb; }
+  .stat-box .label { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .toolbar input[type=text] {
+    flex: 1; min-width: 160px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9rem;
+  }
+  .toolbar select {
+    padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9rem;
+  }
+  .btn {
+    padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-secondary { background: #e5e7eb; color: #374151; }
+  .btn-danger { background: #fee2e2; color: #b91c1c; }
+  .btn-ghost { background: transparent; color: #2563eb; text-decoration: underline; padding: 0; font-weight: 500; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead th {
+    text-align: left; padding: 8px 10px; background: #f9fafb; color: #374151;
+    border-bottom: 2px solid #e5e7eb; white-space: nowrap;
+  }
+  tbody td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; }
+  tbody tr:hover { background: #f9fafb; }
+
+  .org-summary-table th, .org-summary-table td { padding: 6px 10px; }
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+  }
+  .pill.ok { background: #dcfce7; color: #15803d; }
+  .pill.full { background: #fee2e2; color: #b91c1c; }
+
+  .table-scroll { overflow-x: auto; }
+  .empty { text-align: center; color: #9ca3af; padding: 24px; font-size: 0.9rem; }
+  .refresh-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .last-updated { font-size: 0.75rem; color: #9ca3af; }
+</style>
+</head>
+<body>
+
+<div id="loginCard" class="card">
+  <h1>เข้าสู่ระบบผู้ดูแล</h1>
+  <p class="sub">กรอกรหัสผ่านผู้ดูแลเพื่อดูแดชบอร์ด</p>
+  <input type="password" id="adminKey" placeholder="Admin key" />
+  <button id="loginBtn">เข้าสู่ระบบ</button>
+  <div id="loginError"></div>
+</div>
+
+<div class="container" id="dashboard">
+  <div class="card">
+    <div class="refresh-row">
+      <div>
+        <h1>แดชบอร์ดผู้ดูแล — รายงานการลงทะเบียน</h1>
+        <p class="sub" style="margin-bottom:0">การเตรียมความพร้อมเพื่อรองรับ พ.ร.บ. การเปลี่ยนแปลงสภาพภูมิอากาศ — 16 กรกฎาคม 2569</p>
+      </div>
+      <div style="text-align:right">
+        <button class="btn btn-secondary" id="refreshBtn">รีเฟรช</button>
+        <div class="last-updated" id="lastUpdated"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="stat-grid" id="statGrid"></div>
+  </div>
+
+  <div class="card">
+    <h2>สรุปตามสาขา</h2>
+    <div class="table-scroll">
+      <table id="branchTable">
+        <thead><tr><th>สาขา</th><th>หน่วยงานที่ลงทะเบียนแล้ว</th><th>จำนวนผู้ลงทะเบียน</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>สรุปตามหน่วยงาน (ที่นั่ง 5 ต่อหน่วยงาน)</h2>
+    <div class="table-scroll">
+      <table class="org-summary-table" id="orgTable">
+        <thead><tr><th>หน่วยงาน</th><th>สาขา</th><th>จำนวน</th><th>สถานะ</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>รายชื่อผู้ลงทะเบียนทั้งหมด</h2>
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="ค้นหาชื่อ / หน่วยงาน / ตำแหน่ง..." />
+      <select id="branchFilter">
+        <option value="">ทุกสาขา</option>
+      </select>
+      <a class="btn btn-primary" id="exportBtn" href="#" style="text-decoration:none">ดาวน์โหลด CSV</a>
+    </div>
+    <div class="table-scroll">
+      <table id="regTable">
+        <thead>
+          <tr>
+            <th>เวลาลงทะเบียน</th>
+            <th>ชื่อ-นามสกุล</th>
+            <th>ตำแหน่ง</th>
+            <th>หน่วยงาน</th>
+            <th>สาขา</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState" style="display:none">ยังไม่มีข้อมูลการลงทะเบียน</div>
+  </div>
+</div>
+
+<script>
+  const KEY_STORAGE = 'seminar_admin_key';
+  let adminKey = sessionStorage.getItem(KEY_STORAGE) || '';
+  let allRegs = [];
+  let branches = {};
+
+  const loginCard = document.getElementById('loginCard');
+  const dashboard = document.getElementById('dashboard');
+
+  async function tryLoad(key) {
+    const res = await fetch('/api/admin/registrations?key=' + encodeURIComponent(key));
+    if (!res.ok) throw new Error('unauthorized');
+    return res.json();
+  }
+
+  async function login(key) {
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    try {
+      const data = await tryLoad(key);
+      adminKey = key;
+      sessionStorage.setItem(KEY_STORAGE, key);
+      allRegs = data;
+      loginCard.style.display = 'none';
+      dashboard.style.display = 'block';
+      await loadBranches();
+      render();
+    } catch (e) {
+      errEl.textContent = 'รหัสผ่านไม่ถูกต้อง';
+    }
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', () => {
+    login(document.getElementById('adminKey').value.trim());
+  });
+  document.getElementById('adminKey').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') login(document.getElementById('adminKey').value.trim());
+  });
+
+  async function loadBranches() {
+    const res = await fetch('/api/branches');
+    branches = await res.json();
+    const sel = document.getElementById('branchFilter');
+    sel.innerHTML = '<option value="">ทุกสาขา</option>';
+    Object.keys(branches).forEach((b) => {
+      const opt = document.createElement('option');
+      opt.value = b;
+      opt.textContent = b;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function refresh() {
+    try {
+      allRegs = await tryLoad(adminKey);
+      render();
+      document.getElementById('lastUpdated').textContent =
+        'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
+    } catch (e) {
+      loginCard.style.display = 'block';
+      dashboard.style.display = 'none';
+      sessionStorage.removeItem(KEY_STORAGE);
+    }
+  }
+  document.getElementById('refreshBtn').addEventListener('click', refresh);
+
+  document.getElementById('exportBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    window.location.href = '/api/admin/export.csv?key=' + encodeURIComponent(adminKey);
+  });
+
+  document.getElementById('searchBox').addEventListener('input', render);
+  document.getElementById('branchFilter').addEventListener('change', render);
+
+  function render() {
+    const search = document.getElementById('searchBox').value.trim().toLowerCase();
+    const branchFilter = document.getElementById('branchFilter').value;
+
+    let filtered = allRegs;
+    if (branchFilter) filtered = filtered.filter((r) => r.branch === branchFilter);
+    if (search) {
+      filtered = filtered.filter((r) =>
+        [r.fullName, r.orgName, r.position].some((v) => (v || '').toLowerCase().includes(search))
+      );
+    }
+
+    // --- stats ---
+    const totalOrgs = new Set(allRegs.map((r) => r.orgName)).size;
+    const totalBranches = new Set(allRegs.map((r) => r.branch)).size;
+    const fullOrgCount = Object.values(
+      allRegs.reduce((acc, r) => {
+        acc[r.orgName] = (acc[r.orgName] || 0) + 1;
+        return acc;
+      }, {})
+    ).filter((c) => c >= 5).length;
+
+    document.getElementById('statGrid').innerHTML = `
+      <div class="stat-box"><div class="num">${allRegs.length}</div><div class="label">ผู้ลงทะเบียนทั้งหมด</div></div>
+      <div class="stat-box"><div class="num">${totalOrgs}</div><div class="label">หน่วยงานที่ลงทะเบียน</div></div>
+      <div class="stat-box"><div class="num">${totalBranches}</div><div class="label">สาขาที่มีผู้ลงทะเบียน</div></div>
+      <div class="stat-box"><div class="num">${fullOrgCount}</div><div class="label">หน่วยงานที่เต็มโควต้า (5/5)</div></div>
+    `;
+
+    // --- branch summary ---
+    const branchAgg = {};
+    allRegs.forEach((r) => {
+      if (!branchAgg[r.branch]) branchAgg[r.branch] = { orgs: new Set(), count: 0 };
+      branchAgg[r.branch].orgs.add(r.orgName);
+      branchAgg[r.branch].count += 1;
+    });
+    const branchRows = Object.entries(branchAgg)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(
+        ([branch, agg]) =>
+          `<tr><td>${escapeHtml(branch)}</td><td>${agg.orgs.size}</td><td>${agg.count}</td></tr>`
+      )
+      .join('');
+    document.querySelector('#branchTable tbody').innerHTML =
+      branchRows || '<tr><td colspan="3" class="empty">ยังไม่มีข้อมูล</td></tr>';
+
+    // --- org summary ---
+    const orgAgg = {};
+    allRegs.forEach((r) => {
+      if (!orgAgg[r.orgName]) orgAgg[r.orgName] = { branch: r.branch, count: 0 };
+      orgAgg[r.orgName].count += 1;
+    });
+    const orgRows = Object.entries(orgAgg)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([org, agg]) => {
+        const full = agg.count >= 5;
+        return `<tr>
+          <td>${escapeHtml(org)}</td>
+          <td>${escapeHtml(agg.branch)}</td>
+          <td>${agg.count}/5</td>
+          <td><span class="pill ${full ? 'full' : 'ok'}">${full ? 'เต็มแล้ว' : 'ว่าง'}</span></td>
+        </tr>`;
+      })
+      .join('');
+    document.querySelector('#orgTable tbody').innerHTML =
+      orgRows || '<tr><td colspan="4" class="empty">ยังไม่มีข้อมูล</td></tr>';
+
+    // --- registration table ---
+    const sorted = [...filtered].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const rows = sorted
+      .map(
+        (r) => `<tr>
+          <td>${formatDate(r.timestamp)}</td>
+          <td>${escapeHtml(r.fullName)}</td>
+          <td>${escapeHtml(r.position)}</td>
+          <td>${escapeHtml(r.orgName)}</td>
+          <td>${escapeHtml(r.branch)}</td>
+        </tr>`
+      )
+      .join('');
+    document.querySelector('#regTable tbody').innerHTML = rows;
+    document.getElementById('emptyState').style.display = sorted.length ? 'none' : 'block';
+  }
+
+  function formatDate(iso) {
+    try {
+      return new Date(iso).toLocaleString('th-TH', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+      });
+    } catch (e) {
+      return iso;
+    }
+  }
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  if (adminKey) {
+    login(adminKey);
+  }
+</script>
+</body>
+</html>

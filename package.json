@@ -1,0 +1,14 @@
+{
+  "name": "seminar-registration",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.109.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2"
+  }
+}
