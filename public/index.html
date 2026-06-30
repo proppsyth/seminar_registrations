@@ -70,17 +70,6 @@
   select:focus, input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
   select:disabled { background: #f3f4f6; color: #9ca3af; }
 
-  .substitute-toggle {
-    margin-top: 16px; padding: 12px; background: #fffbeb; border: 1px solid #fde68a;
-    border-radius: 10px;
-  }
-  .substitute-toggle label.checkbox-label {
-    display: flex; align-items: center; gap: 8px; font-weight: 600; color: #92400e; margin: 0;
-    cursor: pointer;
-  }
-  .substitute-toggle p.hint { font-size: 0.78rem; color: #92400e; margin: 6px 0 0; opacity: 0.85; }
-  #substituteSelectWrap { margin-top: 10px; display: none; }
-
   .consent-block { background: #f9fafb; border-radius: 10px; padding: 12px; margin-top: 16px; }
   .consent-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
   .consent-row input[type=checkbox] { margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0; }
@@ -156,19 +145,6 @@
     <div class="static-field">วันพฤหัสบดีที่ 16 กรกฎาคม 2569 ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์</div>
     <input type="hidden" id="trainingDate" value="วันพฤหัสบดีที่ 16 กรกฎาคม 2569 ณ ห้องแคทลียา โรงแรมรามา การ์เด้นส์" />
 
-    <div class="substitute-toggle">
-      <label class="checkbox-label">
-        <input type="checkbox" id="isSubstitute" />
-        ลงทะเบียนแทนผู้ที่ลงทะเบียนไว้แล้วแต่ไม่สามารถเข้าร่วมได้
-      </label>
-      <p class="hint">ใช้กรณีฉุกเฉิน เช่น มีคนลงทะเบียนไว้แล้วแต่มาไม่ได้ ท่านมาแทนโดยกรอกข้อมูลของท่านเอง แล้วเลือกชื่อผู้ที่ไม่มาด้านล่าง</p>
-      <div id="substituteSelectWrap">
-        <select id="substituteFor">
-          <option value="">-- เลือกสาขาและหน่วยงานก่อน --</option>
-        </select>
-      </div>
-    </div>
-
     <div class="consent-block">
       <div class="consent-row">
         <input type="checkbox" id="ackPurpose" required />
@@ -203,9 +179,6 @@
   const orgSelect = document.getElementById('orgName');
   const submitBtn = document.getElementById('submitBtn');
   const msgEl = document.getElementById('msg');
-  const isSubstitute = document.getElementById('isSubstitute');
-  const substituteWrap = document.getElementById('substituteSelectWrap');
-  const substituteFor = document.getElementById('substituteFor');
   let branchesData = {};
 
   fetch('/api/branches')
@@ -236,42 +209,7 @@
       opt.textContent = org;
       orgSelect.appendChild(opt);
     });
-    refreshSubstituteOptions();
   });
-
-  orgSelect.addEventListener('change', refreshSubstituteOptions);
-
-  isSubstitute.addEventListener('change', () => {
-    substituteWrap.style.display = isSubstitute.checked ? 'block' : 'none';
-    if (isSubstitute.checked) refreshSubstituteOptions();
-  });
-
-  async function refreshSubstituteOptions() {
-    if (!isSubstitute.checked) return;
-    substituteFor.innerHTML = '<option value="">กำลังโหลด...</option>';
-    if (!orgSelect.value) {
-      substituteFor.innerHTML = '<option value="">-- เลือกสาขาและหน่วยงานก่อน --</option>';
-      return;
-    }
-    try {
-      const res = await fetch('/api/org-registrations?orgName=' + encodeURIComponent(orgSelect.value));
-      const data = await res.json();
-      substituteFor.innerHTML = '';
-      if (!data.length) {
-        substituteFor.innerHTML = '<option value="">ยังไม่มีผู้ลงทะเบียนในหน่วยงานนี้</option>';
-        return;
-      }
-      substituteFor.innerHTML = '<option value="">-- เลือกชื่อที่จะลงทะเบียนแทน --</option>';
-      data.forEach((r) => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = `${r.fullName} (${r.position})`;
-        substituteFor.appendChild(opt);
-      });
-    } catch (e) {
-      substituteFor.innerHTML = '<option value="">โหลดรายชื่อไม่สำเร็จ</option>';
-    }
-  }
 
   document.getElementById('regForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -290,13 +228,7 @@
       consentGeneral: document.getElementById('consentGeneral').checked,
       consentSensitive: document.getElementById('consentSensitive').checked,
       ackWithdraw: document.getElementById('ackWithdraw').checked,
-      replacesRegistrationId: isSubstitute.checked ? substituteFor.value || null : null,
     };
-
-    if (isSubstitute.checked && !payload.replacesRegistrationId) {
-      msgEl.innerHTML = '<div class="msg error">กรุณาเลือกชื่อผู้ที่ท่านลงทะเบียนแทน</div>';
-      return;
-    }
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'กำลังบันทึก...';
@@ -316,7 +248,6 @@
         document.getElementById('regForm').reset();
         orgSelect.innerHTML = '<option value="">-- เลือกสาขาก่อน --</option>';
         orgSelect.disabled = true;
-        substituteWrap.style.display = 'none';
       }
     } catch (err) {
       msgEl.innerHTML = '<div class="msg error">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>';
