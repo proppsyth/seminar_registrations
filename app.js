@@ -110,7 +110,7 @@ app.post('/api/register', async (req, res) => {
     replacesRegistrationId,
   } = req.body || {};
 
-  if (!orgName || !branch || !title || !firstName || !lastName || !phone || !position || !trainingDate) {
+  if (!orgName || !branch || !title || !firstName || !lastName || !phone || !email || !position || !trainingDate) {
     return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
   }
   if (!branches[branch] || !branches[branch].includes(orgName)) {
@@ -119,7 +119,7 @@ app.post('/api/register', async (req, res) => {
   if (!/^[0-9-+() ]{9,15}$/.test(String(phone).trim())) {
     return res.status(400).json({ error: 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง' });
   }
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
     return res.status(400).json({ error: 'กรุณากรอกอีเมลให้ถูกต้อง' });
   }
   if (!ackPurpose || !consentGeneral || !ackWithdraw) {
@@ -203,7 +203,12 @@ app.get('/api/checkin-count', async (req, res) => {
     console.error(error);
     return res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' });
   }
-  res.json({ count: count || 0, remaining: Math.max(0, CHECKIN_CAP - (count || 0)), cap: CHECKIN_CAP });
+  res.json({
+    count: count || 0,
+    remaining: Math.max(0, CHECKIN_CAP - (count || 0)),
+    overCap: Math.max(0, (count || 0) - CHECKIN_CAP),
+    cap: CHECKIN_CAP,
+  });
 });
 
 app.post('/api/checkin', async (req, res) => {
@@ -232,22 +237,8 @@ app.post('/api/checkin', async (req, res) => {
     return res.json({ ok: true, record: toClientRecord(reg), alreadyCheckedIn: true });
   }
 
-  const { count, error: countError } = await supabase
-    .from('seminar_registrations')
-    .select('id', { count: 'exact', head: true })
-    .eq('org_name', reg.org_name)
-    .eq('is_checked_in', true);
-
-  if (countError) {
-    console.error(countError);
-    return res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' });
-  }
-  if ((count || 0) >= CHECKIN_CAP) {
-    return res.status(409).json({
-      error: `หน่วยงาน "${reg.org_name}" เช็คอินครบ ${CHECKIN_CAP} ท่านแล้ว กรุณาติดต่อเจ้าหน้าที่หน้างาน`,
-    });
-  }
-
+  // No hard cap here — orgs can check in more than CHECKIN_CAP people if needed.
+  // Anyone past the cap is simply flagged in the admin dashboard, not blocked at the door.
   const { data, error: updateError } = await supabase
     .from('seminar_registrations')
     .update({ is_checked_in: true, checked_in_at: new Date().toISOString() })

@@ -397,9 +397,29 @@
   const CHECKIN_CAP = 5;
   let expandedOrg = null;
 
+  // For each org, the first CHECKIN_CAP people (by check-in time) are "within quota";
+  // anyone checked in after that is flagged as over quota — never blocked, just surfaced here.
+  function computeOverCapIds(activeRegs) {
+    const byOrg = {};
+    activeRegs
+      .filter((r) => r.isCheckedIn)
+      .forEach((r) => {
+        (byOrg[r.orgName] = byOrg[r.orgName] || []).push(r);
+      });
+    const overCapIds = new Set();
+    Object.values(byOrg).forEach((people) => {
+      people
+        .sort((a, b) => new Date(a.checkedInAt) - new Date(b.checkedInAt))
+        .slice(CHECKIN_CAP)
+        .forEach((r) => overCapIds.add(r.id));
+    });
+    return overCapIds;
+  }
+
   function loadCheckinSummary() {
     const activeRegs = allRegs.filter((r) => !r.isReplaced);
     const checkedIn = activeRegs.filter((r) => r.isCheckedIn);
+    const overCapIds = computeOverCapIds(activeRegs);
 
     const orgAgg = {};
     activeRegs.forEach((r) => {
@@ -412,24 +432,31 @@
       <div class="stat-box"><div class="num">${activeRegs.length}</div><div class="label">ผู้ลงทะเบียนทั้งหมด</div></div>
       <div class="stat-box green"><div class="num">${checkedIn.length}</div><div class="label">เช็คอินแล้ว</div></div>
       <div class="stat-box"><div class="num">${activeRegs.length - checkedIn.length}</div><div class="label">ยังไม่เช็คอิน</div></div>
-      <div class="stat-box"><div class="num">${Object.keys(orgAgg).length}</div><div class="label">หน่วยงานทั้งหมด</div></div>
+      <div class="stat-box ${overCapIds.size ? '' : 'green'}" style="${overCapIds.size ? 'background:#fee2e2' : ''}">
+        <div class="num" style="${overCapIds.size ? 'color:#b91c1c' : ''}">${overCapIds.size}</div>
+        <div class="label">เช็คอินเกินโควต้า</div>
+      </div>
     `;
 
     const orgRows = Object.entries(orgAgg)
       .sort((a, b) => b[1].checkedIn - a[1].checkedIn)
       .map(([orgName, o]) => {
         const pct = Math.min(100, Math.round((o.checkedIn / CHECKIN_CAP) * 100));
-        const full = o.checkedIn >= CHECKIN_CAP;
+        const over = o.checkedIn > CHECKIN_CAP;
+        const full = o.checkedIn === CHECKIN_CAP;
         const isExpanded = expandedOrg === orgName;
+        let statusPill = '<span class="pill ok">ว่าง</span>';
+        if (over) statusPill = `<span class="pill full">เกิน ${o.checkedIn - CHECKIN_CAP} คน</span>`;
+        else if (full) statusPill = '<span class="pill muted">ครบ 5 คน</span>';
         return `<tr class="org-row" data-org="${escapeHtml(orgName)}" style="cursor:pointer">
           <td>${isExpanded ? '▾ ' : '▸ '}${escapeHtml(orgName)}</td>
           <td>${escapeHtml(o.branch)}</td>
           <td>${o.registered}</td>
           <td>
-            <div class="progress-bar"><div class="progress-bar-fill ${full ? 'full' : ''}" style="width:${pct}%"></div></div>
+            <div class="progress-bar"><div class="progress-bar-fill ${over ? 'full' : ''}" style="width:${pct}%"></div></div>
             ${o.checkedIn}/${CHECKIN_CAP}
           </td>
-          <td>${full ? '<span class="pill full">เต็มแล้ว</span>' : '<span class="pill ok">ว่าง</span>'}</td>
+          <td>${statusPill}</td>
         </tr>`;
       })
       .join('');
@@ -443,11 +470,11 @@
       });
     });
 
-    renderOrgCheckinDetail(activeRegs);
-    renderLiveCheckinFeed(checkedIn);
+    renderOrgCheckinDetail(activeRegs, overCapIds);
+    renderLiveCheckinFeed(checkedIn, overCapIds);
   }
 
-  function renderOrgCheckinDetail(activeRegs) {
+  function renderOrgCheckinDetail(activeRegs, overCapIds) {
     const detailEl = document.getElementById('orgCheckinDetail');
     if (!expandedOrg) {
       detailEl.innerHTML = '';
@@ -461,15 +488,19 @@
       });
 
     const rows = people
-      .map(
-        (r) => `<tr>
-          <td>${r.isCheckedIn ? '<span class="pill ok">เช็คอินแล้ว</span>' : '<span class="pill muted">ยังไม่เช็คอิน</span>'}</td>
+      .map((r) => {
+        let statusPill = '<span class="pill muted">ยังไม่เช็คอิน</span>';
+        if (r.isCheckedIn) statusPill = overCapIds.has(r.id)
+          ? '<span class="pill full">เช็คอินแล้ว (เกินโควต้า)</span>'
+          : '<span class="pill ok">เช็คอินแล้ว</span>';
+        return `<tr>
+          <td>${statusPill}</td>
           <td>${escapeHtml(r.fullName)}</td>
           <td>${escapeHtml(r.position)}</td>
           <td>${escapeHtml(r.phone)}</td>
           <td>${r.checkedInAt ? formatDate(r.checkedInAt) : '-'}</td>
-        </tr>`
-      )
+        </tr>`;
+      })
       .join('');
 
     detailEl.innerHTML = `
@@ -485,13 +516,13 @@
     `;
   }
 
-  function renderLiveCheckinFeed(checkedIn) {
+  function renderLiveCheckinFeed(checkedIn, overCapIds) {
     const sorted = [...checkedIn].sort((a, b) => new Date(b.checkedInAt) - new Date(a.checkedInAt));
     const rows = sorted
       .slice(0, 100)
       .map(
-        (r) => `<tr>
-          <td>${formatDate(r.checkedInAt)}</td>
+        (r) => `<tr style="${overCapIds.has(r.id) ? 'background:#fef2f2' : ''}">
+          <td>${formatDate(r.checkedInAt)}${overCapIds.has(r.id) ? ' <span class="pill full">เกินโควต้า</span>' : ''}</td>
           <td>${escapeHtml(r.fullName)}</td>
           <td>${escapeHtml(r.position)}</td>
           <td>${escapeHtml(r.orgName)}</td>
