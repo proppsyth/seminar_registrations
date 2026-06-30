@@ -178,16 +178,31 @@
 
   <div class="tab-panel" id="panel-checkin">
     <div class="card">
-      <div class="stat-grid" id="checkinStatGrid"></div>
+      <div class="refresh-row" style="margin-bottom:0">
+        <div class="stat-grid" id="checkinStatGrid" style="flex:1"></div>
+      </div>
+      <p class="sub" style="margin:10px 0 0">🔴 อัปเดตอัตโนมัติทุก 8 วินาที</p>
     </div>
     <div class="card">
       <h2>สถานะเช็คอินตามหน่วยงาน (เพดาน 5 ที่นั่ง/หน่วยงาน)</h2>
+      <p class="sub" style="margin-top:-8px">คลิกที่ชื่อหน่วยงานเพื่อดูรายชื่อผู้ที่เช็คอินแล้ว</p>
       <div class="table-scroll">
         <table class="org-summary-table" id="checkinOrgTable">
           <thead><tr><th>หน่วยงาน</th><th>สาขา</th><th>ลงทะเบียน</th><th>เช็คอินแล้ว</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
+      <div id="orgCheckinDetail"></div>
+    </div>
+    <div class="card">
+      <h2>เพิ่งเช็คอินล่าสุด (เรียลไทม์)</h2>
+      <div class="table-scroll">
+        <table id="liveCheckinTable">
+          <thead><tr><th>เวลาเช็คอิน</th><th>ชื่อ-นามสกุล</th><th>ตำแหน่ง</th><th>หน่วยงาน</th><th>สาขา</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="liveCheckinEmpty" style="display:none">ยังไม่มีผู้เช็คอิน</div>
     </div>
   </div>
 </div>
@@ -379,40 +394,113 @@
     }
   }
 
-  async function loadCheckinSummary() {
-    try {
-      const res = await authedFetch('/api/admin/checkin-summary');
-      const data = await res.json();
+  const CHECKIN_CAP = 5;
+  let expandedOrg = null;
 
-      document.getElementById('checkinStatGrid').innerHTML = `
-        <div class="stat-box"><div class="num">${data.totalActive}</div><div class="label">ผู้ลงทะเบียนทั้งหมด</div></div>
-        <div class="stat-box green"><div class="num">${data.totalCheckedIn}</div><div class="label">เช็คอินแล้ว</div></div>
-        <div class="stat-box"><div class="num">${data.totalActive - data.totalCheckedIn}</div><div class="label">ยังไม่เช็คอิน</div></div>
-        <div class="stat-box"><div class="num">${data.orgs.length}</div><div class="label">หน่วยงานทั้งหมด</div></div>
-      `;
+  function loadCheckinSummary() {
+    const activeRegs = allRegs.filter((r) => !r.isReplaced);
+    const checkedIn = activeRegs.filter((r) => r.isCheckedIn);
 
-      const rows = data.orgs
-        .sort((a, b) => b.checkedIn - a.checkedIn)
-        .map((o) => {
-          const pct = Math.min(100, Math.round((o.checkedIn / data.cap) * 100));
-          const full = o.checkedIn >= data.cap;
-          return `<tr>
-            <td>${escapeHtml(o.orgName)}</td>
-            <td>${escapeHtml(o.branch)}</td>
-            <td>${o.registered}</td>
-            <td>
-              <div class="progress-bar"><div class="progress-bar-fill ${full ? 'full' : ''}" style="width:${pct}%"></div></div>
-              ${o.checkedIn}/${data.cap}
-            </td>
-            <td>${full ? '<span class="pill full">เต็มแล้ว</span>' : '<span class="pill ok">ว่าง</span>'}</td>
-          </tr>`;
-        })
-        .join('');
-      document.querySelector('#checkinOrgTable tbody').innerHTML =
-        rows || '<tr><td colspan="5" class="empty">ยังไม่มีข้อมูล</td></tr>';
-    } catch (e) {
-      // ignore — refresh() handles auth failure globally
+    const orgAgg = {};
+    activeRegs.forEach((r) => {
+      if (!orgAgg[r.orgName]) orgAgg[r.orgName] = { branch: r.branch, registered: 0, checkedIn: 0 };
+      orgAgg[r.orgName].registered += 1;
+      if (r.isCheckedIn) orgAgg[r.orgName].checkedIn += 1;
+    });
+
+    document.getElementById('checkinStatGrid').innerHTML = `
+      <div class="stat-box"><div class="num">${activeRegs.length}</div><div class="label">ผู้ลงทะเบียนทั้งหมด</div></div>
+      <div class="stat-box green"><div class="num">${checkedIn.length}</div><div class="label">เช็คอินแล้ว</div></div>
+      <div class="stat-box"><div class="num">${activeRegs.length - checkedIn.length}</div><div class="label">ยังไม่เช็คอิน</div></div>
+      <div class="stat-box"><div class="num">${Object.keys(orgAgg).length}</div><div class="label">หน่วยงานทั้งหมด</div></div>
+    `;
+
+    const orgRows = Object.entries(orgAgg)
+      .sort((a, b) => b[1].checkedIn - a[1].checkedIn)
+      .map(([orgName, o]) => {
+        const pct = Math.min(100, Math.round((o.checkedIn / CHECKIN_CAP) * 100));
+        const full = o.checkedIn >= CHECKIN_CAP;
+        const isExpanded = expandedOrg === orgName;
+        return `<tr class="org-row" data-org="${escapeHtml(orgName)}" style="cursor:pointer">
+          <td>${isExpanded ? '▾ ' : '▸ '}${escapeHtml(orgName)}</td>
+          <td>${escapeHtml(o.branch)}</td>
+          <td>${o.registered}</td>
+          <td>
+            <div class="progress-bar"><div class="progress-bar-fill ${full ? 'full' : ''}" style="width:${pct}%"></div></div>
+            ${o.checkedIn}/${CHECKIN_CAP}
+          </td>
+          <td>${full ? '<span class="pill full">เต็มแล้ว</span>' : '<span class="pill ok">ว่าง</span>'}</td>
+        </tr>`;
+      })
+      .join('');
+    document.querySelector('#checkinOrgTable tbody').innerHTML =
+      orgRows || '<tr><td colspan="5" class="empty">ยังไม่มีข้อมูล</td></tr>';
+
+    document.querySelectorAll('.org-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        expandedOrg = expandedOrg === row.dataset.org ? null : row.dataset.org;
+        loadCheckinSummary();
+      });
+    });
+
+    renderOrgCheckinDetail(activeRegs);
+    renderLiveCheckinFeed(checkedIn);
+  }
+
+  function renderOrgCheckinDetail(activeRegs) {
+    const detailEl = document.getElementById('orgCheckinDetail');
+    if (!expandedOrg) {
+      detailEl.innerHTML = '';
+      return;
     }
+    const people = activeRegs
+      .filter((r) => r.orgName === expandedOrg)
+      .sort((a, b) => {
+        if (!!a.isCheckedIn !== !!b.isCheckedIn) return a.isCheckedIn ? -1 : 1;
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+
+    const rows = people
+      .map(
+        (r) => `<tr>
+          <td>${r.isCheckedIn ? '<span class="pill ok">เช็คอินแล้ว</span>' : '<span class="pill muted">ยังไม่เช็คอิน</span>'}</td>
+          <td>${escapeHtml(r.fullName)}</td>
+          <td>${escapeHtml(r.position)}</td>
+          <td>${escapeHtml(r.phone)}</td>
+          <td>${r.checkedInAt ? formatDate(r.checkedInAt) : '-'}</td>
+        </tr>`
+      )
+      .join('');
+
+    detailEl.innerHTML = `
+      <div style="margin-top:14px; padding-top:14px; border-top:1px solid #f3f4f6">
+        <h2 style="margin-bottom:8px">รายชื่อ — ${escapeHtml(expandedOrg)}</h2>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>สถานะ</th><th>ชื่อ-นามสกุล</th><th>ตำแหน่ง</th><th>เบอร์โทร</th><th>เวลาเช็คอิน</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="5" class="empty">ไม่มีข้อมูล</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderLiveCheckinFeed(checkedIn) {
+    const sorted = [...checkedIn].sort((a, b) => new Date(b.checkedInAt) - new Date(a.checkedInAt));
+    const rows = sorted
+      .slice(0, 100)
+      .map(
+        (r) => `<tr>
+          <td>${formatDate(r.checkedInAt)}</td>
+          <td>${escapeHtml(r.fullName)}</td>
+          <td>${escapeHtml(r.position)}</td>
+          <td>${escapeHtml(r.orgName)}</td>
+          <td>${escapeHtml(r.branch)}</td>
+        </tr>`
+      )
+      .join('');
+    document.querySelector('#liveCheckinTable tbody').innerHTML = rows;
+    document.getElementById('liveCheckinEmpty').style.display = sorted.length ? 'none' : 'block';
   }
 
   function formatDate(iso) {
@@ -433,6 +521,13 @@
   if (adminKey) {
     login(adminKey);
   }
+
+  setInterval(() => {
+    if (!adminKey) return;
+    if (document.getElementById('panel-checkin').classList.contains('active')) {
+      refresh();
+    }
+  }, 8000);
 </script>
 </body>
 </html>
