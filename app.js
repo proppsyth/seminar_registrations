@@ -6,10 +6,13 @@ const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const CHECKIN_CAP = 5;
-// Check-in only opens on the morning of the event — blocks early check-ins.
+// Check-in date gate — disabled by default so it can be tested anytime.
+// Set CHECKIN_LOCK_ENABLED=true (and optionally CHECKIN_OPENS_AT) to enforce it again before the real event.
+const CHECKIN_LOCK_ENABLED = process.env.CHECKIN_LOCK_ENABLED === 'true';
 const CHECKIN_OPENS_AT = process.env.CHECKIN_OPENS_AT || '2026-07-16T00:00:00+07:00';
 
 function isCheckinOpen() {
+  if (!CHECKIN_LOCK_ENABLED) return true;
   return new Date() >= new Date(CHECKIN_OPENS_AT);
 }
 
