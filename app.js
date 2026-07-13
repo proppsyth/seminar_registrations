@@ -74,6 +74,23 @@ app.get('/api/event-info', (req, res) => {
 
 // List active (non-replaced) registrants for an org — used by the registration page's
 // "substitute for a no-show" picker and the check-in page.
+app.get('/api/reg-count', async (req, res) => {
+  const { orgName } = req.query;
+  if (!orgName) return res.status(400).json({ error: 'missing orgName' });
+
+  const { count, error } = await supabase
+    .from('seminar_registrations')
+    .select('id', { count: 'exact', head: true })
+    .eq('org_name', orgName)
+    .eq('is_replaced', false);
+
+  if (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' });
+  }
+  res.json({ count: count || 0, cap: CHECKIN_CAP, overCap: Math.max(0, (count || 0) - CHECKIN_CAP) });
+});
+
 app.get('/api/org-registrations', async (req, res) => {
   const { orgName } = req.query;
   if (!orgName) return res.status(400).json({ error: 'missing orgName' });

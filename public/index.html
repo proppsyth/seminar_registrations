@@ -86,6 +86,11 @@
   .msg { padding: 12px; border-radius: 10px; margin-top: 12px; font-size: 0.9rem; }
   .msg.error { background: #fee2e2; color: #b91c1c; }
   .msg.success { background: #dcfce7; color: #15803d; }
+  .reg-cap-warn {
+    background: #fef9c3; border: 1px solid #fde047; border-radius: 10px;
+    padding: 10px 14px; margin-top: 10px; font-size: 0.85rem; color: #854d0e; display: none;
+  }
+  .reg-cap-warn.over { background: #fff7ed; border-color: #fb923c; color: #9a3412; }
   .static-field {
     padding: 10px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px;
     font-size: 0.95rem; color: #374151;
@@ -115,6 +120,7 @@
     <select id="orgName" required disabled>
       <option value="">-- เลือกสาขาก่อน --</option>
     </select>
+    <div class="reg-cap-warn" id="regCapWarn"></div>
 
     <label>คำนำหน้า / ชื่อ / นามสกุล *</label>
     <div class="field-row">
@@ -192,9 +198,31 @@
       });
     });
 
+  const regCapWarn = document.getElementById('regCapWarn');
+
+  async function checkRegCap(orgName) {
+    regCapWarn.style.display = 'none';
+    regCapWarn.className = 'reg-cap-warn';
+    if (!orgName) return;
+    try {
+      const r = await fetch('/api/reg-count?orgName=' + encodeURIComponent(orgName));
+      const d = await r.json();
+      if (d.count >= d.cap) {
+        regCapWarn.style.display = 'block';
+        if (d.overCap > 0) {
+          regCapWarn.classList.add('over');
+          regCapWarn.innerHTML = `⚠️ หน่วยงานของคุณมีผู้ลงทะเบียนแล้ว <strong>${d.count} ท่าน</strong> (เกินโควต้า ${d.overCap} ท่าน) — ยังสามารถลงทะเบียนได้ แต่ทีมงานจะคัดเลือกรายชื่อเพื่อเข้างาน`;
+        } else {
+          regCapWarn.innerHTML = `⚠️ หน่วยงานของคุณลงทะเบียนครบ <strong>${d.cap} ท่าน</strong> แล้ว — ยังสามารถลงทะเบียนสำรองได้ แต่ทีมงานจะคัดเลือกรายชื่อเพื่อเข้างาน`;
+        }
+      }
+    } catch (_) {}
+  }
+
   branchSelect.addEventListener('change', () => {
     const branch = branchSelect.value;
     orgSelect.innerHTML = '';
+    regCapWarn.style.display = 'none';
     if (!branch) {
       orgSelect.disabled = true;
       orgSelect.innerHTML = '<option value="">-- เลือกสาขาก่อน --</option>';
@@ -208,6 +236,10 @@
       opt.textContent = org;
       orgSelect.appendChild(opt);
     });
+  });
+
+  orgSelect.addEventListener('change', () => {
+    checkRegCap(orgSelect.value);
   });
 
   document.getElementById('regForm').addEventListener('submit', async (e) => {
