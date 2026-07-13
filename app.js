@@ -143,6 +143,21 @@ app.post('/api/register', async (req, res) => {
     return res.status(400).json({ error: 'กรุณายืนยันการรับทราบและยินยอมตามที่ระบุ' });
   }
 
+  // Hard cap: block registration when org already has CHECKIN_CAP active registrants
+  if (!replacesRegistrationId) {
+    const { count: orgCount, error: countError } = await supabase
+      .from('seminar_registrations')
+      .select('id', { count: 'exact', head: true })
+      .eq('org_name', orgName)
+      .eq('is_replaced', false);
+
+    if (!countError && orgCount >= CHECKIN_CAP) {
+      return res.status(400).json({
+        error: `หน่วยงาน "${orgName}" มีผู้ลงทะเบียนครบ ${CHECKIN_CAP} ท่านแล้ว ไม่สามารถลงทะเบียนเพิ่มได้`,
+      });
+    }
+  }
+
   let replacesId = null;
   if (replacesRegistrationId) {
     const { data: target, error: targetError } = await supabase

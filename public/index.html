@@ -203,18 +203,16 @@
   async function checkRegCap(orgName) {
     regCapWarn.style.display = 'none';
     regCapWarn.className = 'reg-cap-warn';
+    submitBtn.disabled = false;
     if (!orgName) return;
     try {
       const r = await fetch('/api/reg-count?orgName=' + encodeURIComponent(orgName));
       const d = await r.json();
       if (d.count >= d.cap) {
         regCapWarn.style.display = 'block';
-        if (d.overCap > 0) {
-          regCapWarn.classList.add('over');
-          regCapWarn.innerHTML = `⚠️ หน่วยงานของคุณมีผู้ลงทะเบียนแล้ว <strong>${d.count} ท่าน</strong> (เกินโควต้า ${d.overCap} ท่าน) — ยังสามารถลงทะเบียนได้ แต่ทีมงานจะคัดเลือกรายชื่อเพื่อเข้างาน`;
-        } else {
-          regCapWarn.innerHTML = `⚠️ หน่วยงานของคุณลงทะเบียนครบ <strong>${d.cap} ท่าน</strong> แล้ว — ยังสามารถลงทะเบียนสำรองได้ แต่ทีมงานจะคัดเลือกรายชื่อเพื่อเข้างาน`;
-        }
+        regCapWarn.classList.add('over');
+        regCapWarn.innerHTML = `🚫 หน่วยงานของคุณมีผู้ลงทะเบียนครบ <strong>${d.cap} ท่าน</strong> แล้ว ไม่สามารถลงทะเบียนเพิ่มได้`;
+        submitBtn.disabled = true;
       }
     } catch (_) {}
   }
