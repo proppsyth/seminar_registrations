@@ -421,13 +421,14 @@ app.get('/api/admin/org-caps', requireAdmin, async (req, res) => {
 });
 
 app.put('/api/admin/org-caps', requireAdmin, async (req, res) => {
-  const { orgName, cap } = req.body || {};
-  if (!orgName) return res.status(400).json({ error: 'missing orgName' });
+  const { orgName, org_name, cap } = req.body || {};
+  const resolvedOrgName = orgName || org_name;
+  if (!resolvedOrgName) return res.status(400).json({ error: 'missing orgName' });
 
   if (cap === null || cap === undefined) {
-    await supabase.from('org_caps').delete().eq('org_name', orgName);
+    await supabase.from('org_caps').delete().eq('org_name', resolvedOrgName);
   } else {
-    const { error } = await supabase.from('org_caps').upsert({ org_name: orgName, cap: Number(cap) });
+    const { error } = await supabase.from('org_caps').upsert({ org_name: resolvedOrgName, cap: Number(cap) });
     if (error) { console.error(error); return res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' }); }
   }
   res.json({ ok: true });
