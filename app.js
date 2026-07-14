@@ -230,21 +230,25 @@ app.get('/api/checkin-count', async (req, res) => {
   const { orgName } = req.query;
   if (!orgName) return res.status(400).json({ error: 'missing orgName' });
 
-  const { count, error } = await supabase
-    .from('seminar_registrations')
-    .select('id', { count: 'exact', head: true })
-    .eq('org_name', orgName)
-    .eq('is_checked_in', true);
+  const [{ count, error }, cap] = await Promise.all([
+    supabase
+      .from('seminar_registrations')
+      .select('id', { count: 'exact', head: true })
+      .eq('org_name', orgName)
+      .eq('is_checked_in', true),
+    getOrgCap(orgName),
+  ]);
 
   if (error) {
     console.error(error);
     return res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' });
   }
+  const checkedIn = count || 0;
   res.json({
-    count: count || 0,
-    remaining: Math.max(0, CHECKIN_CAP - (count || 0)),
-    overCap: Math.max(0, (count || 0) - CHECKIN_CAP),
-    cap: CHECKIN_CAP,
+    count: checkedIn,
+    remaining: cap === null ? null : Math.max(0, cap - checkedIn),
+    overCap: cap === null ? 0 : Math.max(0, checkedIn - cap),
+    cap: cap === null ? null : cap,
   });
 });
 

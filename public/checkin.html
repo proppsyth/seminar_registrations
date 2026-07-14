@@ -297,10 +297,13 @@
 
     capBanner.style.display = 'flex';
     capBanner.className = 'cap-banner ' + (countInfo.overCap > 0 ? 'full' : 'ok');
-    capBanner.innerHTML = `<span>เช็คอินแล้ว ${countInfo.count}/${countInfo.cap} ที่นั่ง</span>` +
-      (countInfo.overCap > 0
+    const capLabel = countInfo.cap === null ? 'ไม่จำกัด' : countInfo.cap;
+    const rightLabel = countInfo.cap === null
+      ? ''
+      : countInfo.overCap > 0
         ? `<span>เกินจำนวนที่กำหนด ${countInfo.overCap} ท่าน</span>`
-        : `<span>เหลือ ${countInfo.remaining} ที่นั่ง</span>`);
+        : `<span>เหลือ ${countInfo.remaining} ที่นั่ง</span>`;
+    capBanner.innerHTML = `<span>เช็คอินแล้ว ${countInfo.count}/${capLabel} ที่นั่ง</span>${rightLabel}`;
 
     listCard.style.display = 'block';
     walkinCard.style.display = 'block';
