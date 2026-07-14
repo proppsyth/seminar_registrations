@@ -101,6 +101,34 @@
   .lock-screen .icon { font-size: 2.4rem; margin-bottom: 10px; }
   .lock-screen h1 { font-size: 1.1rem; margin-bottom: 8px; }
   .lock-screen p { color: #6b7280; font-size: 0.9rem; }
+
+  /* Success popup */
+  .success-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .success-overlay.open { display: flex; }
+  .success-box {
+    background: #fff; border-radius: 20px; padding: 32px 28px;
+    text-align: center; width: 88%; max-width: 360px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    animation: popIn 0.25s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+  .success-icon { font-size: 3.2rem; margin-bottom: 10px; }
+  .success-title { font-size: 1.15rem; font-weight: 800; color: #15803d; margin-bottom: 6px; }
+  .success-name { font-size: 1.05rem; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
+  .success-pos { font-size: 0.88rem; color: #6b7280; margin-bottom: 20px; }
+  .success-org { font-size: 0.82rem; color: #9ca3af; margin-bottom: 20px; }
+  .success-close-btn {
+    width: 100%; padding: 12px; background: #2563eb; color: #fff;
+    border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer;
+  }
+  .success-timer { font-size: 0.75rem; color: #9ca3af; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -148,6 +176,19 @@
   <div class="card" id="walkinCard" style="display:none">
     <button class="walkin-toggle-btn" id="walkinToggleBtn">+ ไม่พบชื่อของท่าน / ยังไม่เคยลงทะเบียน — ลงทะเบียนหน้างาน</button>
     <div class="person-form walkin-form" id="walkinFormWrap"></div>
+  </div>
+</div>
+
+<!-- Success Popup -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-box">
+    <div class="success-icon">✅</div>
+    <div class="success-title">เช็คอินเรียบร้อยแล้ว!</div>
+    <div class="success-name" id="successName"></div>
+    <div class="success-pos" id="successPos"></div>
+    <div class="success-org" id="successOrg"></div>
+    <button class="success-close-btn" id="successCloseBtn">ปิด</button>
+    <div class="success-timer" id="successTimer"></div>
   </div>
 </div>
 
@@ -429,7 +470,11 @@
       if (!checkinRes.ok) {
         msgEl.innerHTML = `<div class="msg error">ลงทะเบียนสำเร็จ แต่เช็คอินไม่สำเร็จ: ${checkinData.error || ''}</div>`;
       } else {
-        msgEl.innerHTML = `<div class="msg success">บันทึกและเช็คอิน "${escapeHtml(regData.record.fullName)}" สำเร็จ ✓</div>`;
+        openReplaceId = null;
+        walkinOpen = false;
+        await loadOrg();
+        if (checkinData.record) showCheckinSuccess(checkinData.record);
+        return;
       }
       openReplaceId = null;
       walkinOpen = false;
@@ -453,10 +498,39 @@
         return;
       }
       await loadOrg();
+      if (data.record) showCheckinSuccess(data.record);
     } catch (e) {
       msgEl.innerHTML = '<div class="msg error">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>';
     }
   }
+
+  // ── Success popup ─────────────────────────────────────────────────────────
+  let successTimer = null;
+
+  function showCheckinSuccess(record) {
+    document.getElementById('successName').textContent = record.fullName || '';
+    document.getElementById('successPos').textContent = record.position || '';
+    document.getElementById('successOrg').textContent = record.orgName || '';
+    document.getElementById('successOverlay').classList.add('open');
+    let secs = 5;
+    document.getElementById('successTimer').textContent = `ปิดอัตโนมัติใน ${secs} วินาที`;
+    clearInterval(successTimer);
+    successTimer = setInterval(() => {
+      secs--;
+      if (secs <= 0) { closeSuccess(); }
+      else { document.getElementById('successTimer').textContent = `ปิดอัตโนมัติใน ${secs} วินาที`; }
+    }, 1000);
+  }
+
+  function closeSuccess() {
+    clearInterval(successTimer);
+    document.getElementById('successOverlay').classList.remove('open');
+  }
+
+  document.getElementById('successCloseBtn').addEventListener('click', closeSuccess);
+  document.getElementById('successOverlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('successOverlay')) closeSuccess();
+  });
 
   function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, (c) => ({
