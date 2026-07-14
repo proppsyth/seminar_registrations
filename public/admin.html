@@ -98,6 +98,37 @@
   .progress-bar { width: 100px; height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
   .progress-bar-fill { height: 100%; background: #2563eb; }
   .progress-bar-fill.full { background: #b91c1c; }
+
+  /* Edit modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 16px; padding: 24px;
+    width: 92%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal-box h2 { margin: 0 0 16px; font-size: 1rem; }
+  .modal-field { margin-bottom: 12px; }
+  .modal-field label { display: block; font-size: 0.82rem; font-weight: 600; color: #374151; margin-bottom: 4px; }
+  .modal-field input, .modal-field select {
+    width: 100%; padding: 8px 10px; border: 1px solid #d1d5db;
+    border-radius: 8px; font-size: 0.9rem; font-family: inherit;
+  }
+  .modal-field input:focus, .modal-field select:focus { outline: none; border-color: #2563eb; }
+  .modal-name-row { display: grid; grid-template-columns: 100px 1fr 1fr; gap: 8px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .modal-err { color: #b91c1c; font-size: 0.82rem; margin-top: 8px; min-height: 1.2em; }
+
+  /* Cap settings */
+  .cap-table input[type=number] {
+    width: 70px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; text-align: center;
+  }
+  .cap-badge { font-size: 0.75rem; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+  .cap-default { background: #f3f4f6; color: #6b7280; }
+  .cap-custom { background: #dbeafe; color: #1d4ed8; }
+  .cap-unlimited { background: #dcfce7; color: #15803d; }
 </style>
 </head>
 <body>
@@ -128,6 +159,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="overview">ภาพรวมการลงทะเบียน</button>
     <button class="tab-btn" data-tab="checkin">เช็คอินวันงาน</button>
+    <button class="tab-btn" data-tab="capsettings">ตั้งค่าโควต้า</button>
   </div>
 
   <div class="tab-panel active" id="panel-overview">
@@ -176,6 +208,22 @@
     </div>
   </div>
 
+  <div class="tab-panel" id="panel-capsettings">
+    <div class="card">
+      <h2>ตั้งค่าโควต้าการลงทะเบียนต่อหน่วยงาน</h2>
+      <p class="sub" style="margin-top:-8px">ค่าเริ่มต้น = 5 ท่าน | 0 = ปิดรับ | ว่าง = ไม่จำกัด</p>
+      <div class="toolbar" style="margin-bottom:12px">
+        <input type="text" id="capSearchBox" placeholder="ค้นหาหน่วยงาน..." style="max-width:300px" />
+      </div>
+      <div class="table-scroll">
+        <table class="cap-table" id="capTable">
+          <thead><tr><th>หน่วยงาน</th><th>สาขา</th><th>ลงทะเบียน</th><th>โควต้าปัจจุบัน</th><th>กำหนดโควต้า</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="tab-panel" id="panel-checkin">
     <div class="card">
       <div class="refresh-row" style="margin-bottom:0">
@@ -203,6 +251,52 @@
         </table>
       </div>
       <div class="empty" id="liveCheckinEmpty" style="display:none">ยังไม่มีผู้เช็คอิน</div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Registration Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <h2>แก้ไขข้อมูลผู้ลงทะเบียน</h2>
+    <div class="modal-field">
+      <label>คำนำหน้า / ชื่อ / นามสกุล *</label>
+      <div class="modal-name-row">
+        <select id="editTitle">
+          <option value="นาย">นาย</option>
+          <option value="นาง">นาง</option>
+          <option value="นางสาว">นางสาว</option>
+          <option value="ดร.">ดร.</option>
+          <option value="อื่นๆ">อื่นๆ</option>
+        </select>
+        <input type="text" id="editFirstName" placeholder="ชื่อ" />
+        <input type="text" id="editLastName" placeholder="นามสกุล" />
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>เบอร์โทรศัพท์ *</label>
+      <input type="tel" id="editPhone" />
+    </div>
+    <div class="modal-field">
+      <label>อีเมล *</label>
+      <input type="email" id="editEmail" />
+    </div>
+    <div class="modal-field">
+      <label>ตำแหน่ง *</label>
+      <input type="text" id="editPosition" />
+    </div>
+    <div class="modal-field">
+      <label>สาขา *</label>
+      <select id="editBranch"></select>
+    </div>
+    <div class="modal-field">
+      <label>หน่วยงาน *</label>
+      <select id="editOrgName"></select>
+    </div>
+    <div class="modal-err" id="editErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="editCancelBtn">ยกเลิก</button>
+      <button class="btn btn-primary" id="editSaveBtn">บันทึก</button>
     </div>
   </div>
 </div>
@@ -354,7 +448,8 @@
         const deleteBtn = confirmDeleteId === r.id
           ? `<button class="btn btn-danger btn-sm" data-confirm-delete="${r.id}">ยืนยันลบ</button>
              <button class="btn btn-secondary btn-sm" data-cancel-delete="1">ยกเลิก</button>`
-          : `<button class="btn btn-secondary btn-sm" data-delete="${r.id}">ลบ</button>`;
+          : `<button class="btn btn-secondary btn-sm" data-edit="${r.id}">แก้ไข</button>
+             <button class="btn btn-secondary btn-sm" data-delete="${r.id}">ลบ</button>`;
 
         return `<tr class="${r.isReplaced ? 'replaced-row' : ''}">
           <td>${formatDate(r.timestamp)}</td>
@@ -365,7 +460,7 @@
           <td>${escapeHtml(r.orgName)}</td>
           <td>${escapeHtml(r.branch)}</td>
           <td>${statusPill}</td>
-          <td>${deleteBtn}</td>
+          <td style="white-space:nowrap">${deleteBtn}</td>
         </tr>`;
       })
       .join('');
@@ -380,6 +475,9 @@
     });
     document.querySelectorAll('[data-confirm-delete]').forEach((btn) => {
       btn.addEventListener('click', () => deleteRegistration(btn.dataset.confirmDelete));
+    });
+    document.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => openEditModal(btn.dataset.edit));
     });
   }
 
@@ -547,6 +645,195 @@
     return String(s ?? '').replace(/[&<>"']/g, (c) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[c]));
+  }
+
+  // ── Edit modal ────────────────────────────────────────────────────────────
+  let editId = null;
+
+  function populateEditBranchOrg(selectedBranch, selectedOrg) {
+    const editBranchEl = document.getElementById('editBranch');
+    const editOrgEl = document.getElementById('editOrgName');
+    editBranchEl.innerHTML = '';
+    Object.keys(branches).forEach((b) => {
+      const opt = document.createElement('option');
+      opt.value = b;
+      opt.textContent = b;
+      if (b === selectedBranch) opt.selected = true;
+      editBranchEl.appendChild(opt);
+    });
+    function populateOrgs(branch) {
+      editOrgEl.innerHTML = '';
+      (branches[branch] || []).forEach((org) => {
+        const opt = document.createElement('option');
+        opt.value = org;
+        opt.textContent = org;
+        if (org === selectedOrg) opt.selected = true;
+        editOrgEl.appendChild(opt);
+      });
+    }
+    populateOrgs(selectedBranch);
+    editBranchEl.addEventListener('change', () => {
+      selectedOrg = null;
+      populateOrgs(editBranchEl.value);
+    });
+  }
+
+  function openEditModal(id) {
+    const r = allRegs.find((x) => x.id === id);
+    if (!r) return;
+    editId = id;
+    document.getElementById('editTitle').value = r.title || 'นาย';
+    document.getElementById('editFirstName').value = r.firstName || '';
+    document.getElementById('editLastName').value = r.lastName || '';
+    document.getElementById('editPhone').value = r.phone || '';
+    document.getElementById('editEmail').value = r.email || '';
+    document.getElementById('editPosition').value = r.position || '';
+    document.getElementById('editErr').textContent = '';
+    populateEditBranchOrg(r.branch, r.orgName);
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  async function saveEdit() {
+    const errEl = document.getElementById('editErr');
+    errEl.textContent = '';
+    const payload = {
+      title: document.getElementById('editTitle').value,
+      firstName: document.getElementById('editFirstName').value.trim(),
+      lastName: document.getElementById('editLastName').value.trim(),
+      phone: document.getElementById('editPhone').value.trim(),
+      email: document.getElementById('editEmail').value.trim(),
+      position: document.getElementById('editPosition').value.trim(),
+      branch: document.getElementById('editBranch').value,
+      orgName: document.getElementById('editOrgName').value,
+    };
+    if (!payload.firstName || !payload.lastName || !payload.phone || !payload.email || !payload.position || !payload.branch || !payload.orgName) {
+      errEl.textContent = 'กรุณากรอกข้อมูลให้ครบ';
+      return;
+    }
+    const saveBtn = document.getElementById('editSaveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'กำลังบันทึก...';
+    try {
+      const res = await authedFetch('/api/admin/registrations/' + editId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'บันทึกไม่สำเร็จ'; return; }
+      document.getElementById('editModal').classList.remove('open');
+      editId = null;
+      await refresh();
+    } catch (e) {
+      errEl.textContent = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'บันทึก';
+    }
+  }
+
+  document.getElementById('editCancelBtn').addEventListener('click', () => {
+    document.getElementById('editModal').classList.remove('open');
+    editId = null;
+  });
+  document.getElementById('editSaveBtn').addEventListener('click', saveEdit);
+  document.getElementById('editModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('editModal')) {
+      document.getElementById('editModal').classList.remove('open');
+      editId = null;
+    }
+  });
+
+  // ── Cap settings tab ──────────────────────────────────────────────────────
+  let capData = {};
+  let capCounts = {};
+  let capPendingSaves = {};
+
+  document.querySelector('.tab-btn[data-tab="capsettings"]').addEventListener('click', () => {
+    loadCapSettings();
+  });
+
+  document.getElementById('capSearchBox').addEventListener('input', renderCapTable);
+
+  async function loadCapSettings() {
+    try {
+      const res = await authedFetch('/api/admin/org-caps');
+      const list = await res.json();
+      capData = {};
+      list.forEach((row) => { capData[row.org_name] = row.cap; });
+    } catch (e) {}
+    capCounts = {};
+    allRegs.filter((r) => !r.isReplaced).forEach((r) => {
+      capCounts[r.orgName] = (capCounts[r.orgName] || 0) + 1;
+    });
+    capPendingSaves = {};
+    renderCapTable();
+  }
+
+  function renderCapTable() {
+    const search = document.getElementById('capSearchBox').value.trim().toLowerCase();
+    const allOrgs = new Set();
+    Object.values(branches).forEach((orgs) => orgs.forEach((o) => allOrgs.add(o)));
+    allRegs.forEach((r) => { if (r.orgName) allOrgs.add(r.orgName); });
+
+    const orgBranch = {};
+    Object.entries(branches).forEach(([b, orgs]) => orgs.forEach((o) => { orgBranch[o] = b; }));
+
+    let rows = [...allOrgs].filter((org) => !search || org.toLowerCase().includes(search));
+    rows.sort((a, b) => a.localeCompare(b, 'th'));
+
+    const tbody = document.querySelector('#capTable tbody');
+    tbody.innerHTML = rows.map((org) => {
+      const count = capCounts[org] || 0;
+      const customCap = capData[org];
+      let badgeHtml;
+      if (customCap === undefined) badgeHtml = '<span class="cap-badge cap-default">ค่าเริ่มต้น (5)</span>';
+      else if (customCap === null) badgeHtml = '<span class="cap-badge cap-unlimited">ไม่จำกัด</span>';
+      else if (customCap === 0) badgeHtml = '<span class="cap-badge" style="background:#fee2e2;color:#b91c1c">ปิดรับ</span>';
+      else badgeHtml = `<span class="cap-badge cap-custom">กำหนด: ${customCap}</span>`;
+
+      const inputVal = capPendingSaves[org] !== undefined ? capPendingSaves[org] : (customCap === null ? '' : (customCap !== undefined ? String(customCap) : '5'));
+
+      return `<tr data-org="${escapeHtml(org)}">
+        <td>${escapeHtml(org)}</td>
+        <td>${escapeHtml(orgBranch[org] || '')}</td>
+        <td>${count}</td>
+        <td>${badgeHtml}</td>
+        <td><input type="number" min="0" step="1" class="cap-input" data-org="${escapeHtml(org)}" value="${inputVal}" placeholder="ว่าง=ไม่จำกัด" style="width:90px" /></td>
+        <td><button class="btn btn-primary btn-sm cap-save-btn" data-org="${escapeHtml(org)}">บันทึก</button></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" class="empty">ไม่พบหน่วยงาน</td></tr>';
+
+    tbody.querySelectorAll('.cap-input').forEach((inp) => {
+      inp.addEventListener('input', () => { capPendingSaves[inp.dataset.org] = inp.value; });
+    });
+    tbody.querySelectorAll('.cap-save-btn').forEach((btn) => {
+      btn.addEventListener('click', () => saveCapForOrg(btn.dataset.org));
+    });
+  }
+
+  async function saveCapForOrg(orgName) {
+    const inp = document.querySelector(`.cap-input[data-org="${CSS.escape(orgName)}"]`);
+    const val = inp ? inp.value.trim() : '';
+    let cap = null;
+    if (val !== '') {
+      const n = parseInt(val, 10);
+      if (isNaN(n) || n < 0) { alert('กรุณาใส่ตัวเลขที่ถูกต้อง (0 = ปิดรับ, ว่าง = ไม่จำกัด)'); return; }
+      cap = n;
+    }
+    try {
+      const res = await authedFetch('/api/admin/org-caps', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ org_name: orgName, cap }),
+      });
+      if (!res.ok) { alert('บันทึกไม่สำเร็จ'); return; }
+      capData[orgName] = cap;
+      delete capPendingSaves[orgName];
+      renderCapTable();
+    } catch (e) {
+      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+    }
   }
 
   if (adminKey) {

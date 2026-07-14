@@ -28,6 +28,12 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
   auth: { persistSession: false },
 });
 
+async function getOrgCap(orgName) {
+  const { data } = await supabase.from('org_caps').select('cap').eq('org_name', orgName).maybeSingle();
+  if (data && data.cap !== null) return data.cap;
+  return CHECKIN_CAP;
+}
+
 function normalize(str) {
   return String(str || '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
@@ -78,17 +84,17 @@ app.get('/api/reg-count', async (req, res) => {
   const { orgName } = req.query;
   if (!orgName) return res.status(400).json({ error: 'missing orgName' });
 
-  const { count, error } = await supabase
-    .from('seminar_registrations')
-    .select('id', { count: 'exact', head: true })
-    .eq('org_name', orgName)
-    .eq('is_replaced', false);
+  const [{ count, error }, cap] = await Promise.all([
+    supabase.from('seminar_registrations').select('id', { count: 'exact', head: true }).eq('org_name', orgName).eq('is_replaced', false),
+    getOrgCap(orgName),
+  ]);
 
   if (error) {
     console.error(error);
     return res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' });
   }
-  res.json({ count: count || 0, cap: CHECKIN_CAP, overCap: Math.max(0, (count || 0) - CHECKIN_CAP) });
+  const c = count || 0;
+  res.json({ count: c, cap, overCap: Math.max(0, c - cap) });
 });
 
 app.get('/api/org-registrations', async (req, res) => {
@@ -143,17 +149,16 @@ app.post('/api/register', async (req, res) => {
     return res.status(400).json({ error: 'กรุณายืนยันการรับทราบและยินยอมตามที่ระบุ' });
   }
 
-  // Hard cap: block registration when org already has CHECKIN_CAP active registrants
+  // Hard cap: block registration when org already has cap active registrants
   if (!replacesRegistrationId) {
-    const { count: orgCount, error: countError } = await supabase
-      .from('seminar_registrations')
-      .select('id', { count: 'exact', head: true })
-      .eq('org_name', orgName)
-      .eq('is_replaced', false);
+    const [{ count: orgCount, error: countError }, orgCap] = await Promise.all([
+      supabase.from('seminar_registrations').select('id', { count: 'exact', head: true }).eq('org_name', orgName).eq('is_replaced', false),
+      getOrgCap(orgName),
+    ]);
 
-    if (!countError && orgCount >= CHECKIN_CAP) {
+    if (!countError && orgCap > 0 && orgCount >= orgCap) {
       return res.status(400).json({
-        error: `หน่วยงาน "${orgName}" มีผู้ลงทะเบียนครบ ${CHECKIN_CAP} ท่านแล้ว ไม่สามารถลงทะเบียนเพิ่มได้`,
+        error: `หน่วยงาน "${orgName}" มีผู้ลงทะเบียนครบ ${orgCap} ท่านแล้ว ไม่สามารถลงทะเบียนเพิ่มได้`,
       });
     }
   }
@@ -309,6 +314,46 @@ app.get('/api/admin/registrations', requireAdmin, async (req, res) => {
   res.json(data.map(toClientRecord));
 });
 
+app.patch('/api/admin/registrations/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { title, firstName, lastName, phone, email, position, orgName, branch } = req.body || {};
+
+  if (!title || !firstName || !lastName || !phone || !email || !position || !orgName || !branch) {
+    return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+  }
+  if (!branches[branch] || !branches[branch].includes(orgName)) {
+    return res.status(400).json({ error: 'สาขาหรือหน่วยงานไม่ถูกต้อง' });
+  }
+
+  const fullName = buildFullName(title, firstName, lastName);
+  const fullNameNormalized = normalize(fullName);
+
+  const { data, error } = await supabase
+    .from('seminar_registrations')
+    .update({
+      title: String(title).trim(),
+      first_name: String(firstName).trim(),
+      last_name: String(lastName).trim(),
+      full_name: fullName,
+      full_name_normalized: fullNameNormalized,
+      phone: String(phone).trim(),
+      email: String(email).trim(),
+      position: String(position).trim(),
+      org_name: orgName,
+      branch,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') return res.status(409).json({ error: 'มีชื่อนี้ลงทะเบียนในหน่วยงานนี้แล้ว' });
+    console.error(error);
+    return res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' });
+  }
+  res.json({ ok: true, record: toClientRecord(data) });
+});
+
 app.delete('/api/admin/registrations/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
 
@@ -367,6 +412,25 @@ app.get('/api/admin/checkin-summary', requireAdmin, async (req, res) => {
     cap: CHECKIN_CAP,
     orgs: Object.entries(orgAgg).map(([orgName, v]) => ({ orgName, ...v })),
   });
+});
+
+app.get('/api/admin/org-caps', requireAdmin, async (req, res) => {
+  const { data, error } = await supabase.from('org_caps').select('*');
+  if (error) { console.error(error); return res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' }); }
+  res.json(data || []);
+});
+
+app.put('/api/admin/org-caps', requireAdmin, async (req, res) => {
+  const { orgName, cap } = req.body || {};
+  if (!orgName) return res.status(400).json({ error: 'missing orgName' });
+
+  if (cap === null || cap === undefined) {
+    await supabase.from('org_caps').delete().eq('org_name', orgName);
+  } else {
+    const { error } = await supabase.from('org_caps').upsert({ org_name: orgName, cap: Number(cap) });
+    if (error) { console.error(error); return res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' }); }
+  }
+  res.json({ ok: true });
 });
 
 app.get('/api/admin/export.csv', requireAdmin, async (req, res) => {
