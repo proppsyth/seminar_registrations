@@ -134,7 +134,7 @@
     border-radius: 10px; font-size: 1rem; font-weight: 700;
     text-decoration: none; cursor: pointer;
   }
-  .success-timer { font-size: 0.75rem; color: #9ca3af; margin-top: 8px; }
+  .success-timer { display: none; }
 </style>
 </head>
 <body>
@@ -519,14 +519,6 @@
     document.getElementById('successPos').textContent = record.position || '';
     document.getElementById('successOrg').textContent = record.orgName || '';
     document.getElementById('successOverlay').classList.add('open');
-    let secs = 5;
-    document.getElementById('successTimer').textContent = `ปิดอัตโนมัติใน ${secs} วินาที`;
-    clearInterval(successTimer);
-    successTimer = setInterval(() => {
-      secs--;
-      if (secs <= 0) { closeSuccess(); }
-      else { document.getElementById('successTimer').textContent = `ปิดอัตโนมัติใน ${secs} วินาที`; }
-    }, 1000);
   }
 
   function closeSuccess() {
